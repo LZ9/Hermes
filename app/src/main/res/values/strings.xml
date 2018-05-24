@@ -1,3 +1,19 @@
 <resources>
     <string name="app_name">Hermes</string>
+
+    <string name="main_title">Hermes订阅</string>
+    <string name="main_connect">连接</string>
+    <string name="main_url_hint">请输入ip和端口号</string>
+    <string name="main_client_id_hint">请输入客户端id</string>
+    <string name="main_subtopic_hint">请输入订阅主题名称（多个用英文,隔开）</string>
+    <string name="main_send">发送</string>
+    <string name="main_send_topic_hint">请输入发送主题</string>
+    <string name="main_send_hint">请输入发送内容</string>
+    <string name="main_clean">清空</string>
+    <string name="main_disconnect">断开</string>
+    <string name="main_url_empty">ip和端口号不能为空</string>
+    <string name="main_client_id_empty">客户端id不能为空</string>
+    <string name="main_send_topic_empty">发送主题不能为空</string>
+    <string name="main_send_content_empty">发送内容不能为空</string>
+    <string name="main_client_unconnected">请先连接服务端</string>
 </resources>

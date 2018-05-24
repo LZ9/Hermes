@@ -1,12 +1,73 @@
 package com.lodz.android.hermesdemo;
 
 import android.os.Bundle;
+import android.support.v4.widget.NestedScrollView;
+import android.text.TextUtils;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import com.lodz.android.component.base.activity.AbsActivity;
+import com.lodz.android.core.utils.DateUtils;
+import com.lodz.android.core.utils.ScreenUtils;
+import com.lodz.android.core.utils.StringUtils;
+import com.lodz.android.core.utils.ToastUtils;
+import com.lodz.android.hermes.contract.OnConnectListener;
+import com.lodz.android.hermes.contract.OnPushListener;
+import com.lodz.android.hermes.contract.OnSendListener;
+import com.lodz.android.hermes.contract.PushClient;
+import com.lodz.android.hermes.modules.PushManager;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AbsActivity {
+
+    /** 滚动控件 */
+    @BindView(R.id.scroll_view)
+    NestedScrollView mScrollView;
+    /** 日志 */
+    @BindView(R.id.result)
+    TextView mResultTv;
+
+    /** 地址输入框 */
+    @BindView(R.id.url_edit)
+    EditText mUrlEdit;
+    /** ClientId输入框 */
+    @BindView(R.id.client_id_edit)
+    EditText mClientIdEdit;
+    /** 订阅主题输入框 */
+    @BindView(R.id.subtopic_edit)
+    EditText mSubtopicEdit;
+    /** 连接按钮 */
+    @BindView(R.id.connect_btn)
+    Button mConnectBtn;
+
+    /** 发送主题输入框 */
+    @BindView(R.id.send_topic_edit)
+    EditText mSendTpoicEdit;
+    /** 发送内容输入框 */
+    @BindView(R.id.send_edit)
+    EditText mSendEdit;
+    /** 发送按钮 */
+    @BindView(R.id.send_btn)
+    Button mSendBtn;
+
+    /** 清空按钮 */
+    @BindView(R.id.clean_btn)
+    Button mCleanBtn;
+    /** 断开按钮 */
+    @BindView(R.id.disconnect_btn)
+    Button mDisconnectBtn;
+
+    /** 日志 */
+    private String mLog = "";
+    /** 推送客户端 */
+    private PushClient mPushClient;
 
     @Override
     protected int getAbsLayoutId() {
@@ -18,9 +79,167 @@ public class MainActivity extends AbsActivity {
         ButterKnife.bind(this);
     }
 
+    @Override
+    protected void setListeners() {
+        super.setListeners();
+
+        // 连接
+        mConnectBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (TextUtils.isEmpty(mUrlEdit.getText())) {
+                    ToastUtils.showShort(getContext(), R.string.main_url_empty);
+                    return;
+                }
+                if (TextUtils.isEmpty(mClientIdEdit.getText())) {
+                    ToastUtils.showShort(getContext(), R.string.main_client_id_empty);
+                    return;
+                }
+                List<String> list = new ArrayList<>();
+                if (!TextUtils.isEmpty(mSubtopicEdit.getText())) {
+                    list = StringUtils.getListBySeparator(mSubtopicEdit.getText().toString(), ",");
+                }
+                connect(mUrlEdit.getText().toString(), mClientIdEdit.getText().toString(), list);
+            }
+        });
+
+        // 发送
+        mSendBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mPushClient == null || !mPushClient.isConnected()){
+                    ToastUtils.showShort(getContext(), R.string.main_client_unconnected);
+                    return;
+                }
+                if (TextUtils.isEmpty(mSendTpoicEdit.getText())) {
+                    ToastUtils.showShort(getContext(), R.string.main_send_topic_empty);
+                    return;
+                }
+                if (TextUtils.isEmpty(mSendEdit.getText())) {
+                    ToastUtils.showShort(getContext(), R.string.main_send_content_empty);
+                    return;
+                }
+                mPushClient.sendTopic(mSendTpoicEdit.getText().toString(), mSendEdit.getText().toString());
+            }
+        });
+
+        // 清空
+        mCleanBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mLog = "";
+                mResultTv.setText("");
+            }
+        });
+
+        // 断开
+        mDisconnectBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mPushClient != null && mPushClient.isConnected()){
+                    mPushClient.disconnect();
+                }
+            }
+        });
+    }
+
+    @Override
+    protected void initData() {
+        super.initData();
+        mUrlEdit.setText("tcp://192.168.0.0:8080");
+        mUrlEdit.setSelection(mUrlEdit.length());
+
+        mClientIdEdit.setText("12345");
+        mClientIdEdit.setSelection(mClientIdEdit.length());
+
+        mSubtopicEdit.setText("test.topic");
+        mSubtopicEdit.setSelection(mSubtopicEdit.length());
+
+        mSendTpoicEdit.setText("test.client");
+        mSendTpoicEdit.setSelection(mSendTpoicEdit.length());
+
+        mSendEdit.setText("测试数据");
+        mSendEdit.setSelection(mSendEdit.length());
+    }
+
+    /**
+     * 连接
+     * @param url 地址
+     * @param clientId 客户端id
+     * @param subTopic 订阅主题
+     */
+    private void connect(String url, String clientId, List<String> subTopic) {
+        if (mPushClient != null && mPushClient.isConnected()){
+            return;
+        }
+        mPushClient = PushManager.create()
+                .setUrl(url)
+                .setClientId(clientId)
+                .setPrintLog(true)
+                .setSubTopics(subTopic)
+                .setOnConnectListener(new OnConnectListener() {
+                    @Override
+                    public void onConnectComplete(boolean isReconnected) {
+                        logResult("连接完成 ： isReconnected ---> " + isReconnected);
+                    }
+
+                    @Override
+                    public void onConnectFailure(Throwable cause) {
+                        logResult("连接失败 : " + cause.getMessage());
+                    }
+
+                    @Override
+                    public void onConnectionLost(Throwable cause) {
+                        logResult("连接断开（丢失） : " + cause.getMessage());
+                    }
+                })
+                .setOnSendListener(new OnSendListener() {
+                    @Override
+                    public void onSendComplete(String topic, String content) {
+                        logResult("发送成功 : topic ---> " + topic + "   " + content);
+                    }
+
+                    @Override
+                    public void onSendFailure(String topic, Throwable cause) {
+                        logResult("发送失败 : topic ---> " + topic + "    " + cause.getMessage());
+                    }
+                })
+                .setOnPushListener(new OnPushListener() {
+
+                    @Override
+                    public void onSubscribeSuccess(String topic) {
+                        logResult("订阅成功 : topic ---> " + topic);
+                    }
+
+                    @Override
+                    public void onSubscribeFailure(String topic, Throwable cause) {
+                        logResult("订阅失败 : topic ---> " + topic + "    " + cause.getMessage());
+                    }
+
+                    @Override
+                    public void onMsgArrived(String subTopic, String msg) {
+                        logResult("消息到达(" + subTopic + ")： " + msg);
+                    }
+                })
+                .buildConnect(getContext().getApplicationContext());
+    }
 
 
-
-
-
+    /**
+     * 打印信息
+     * @param result 信息
+     */
+    private void logResult(String result){
+        if (TextUtils.isEmpty(result)) {
+            result = "";
+        }
+        mLog = mLog + DateUtils.getCurrentFormatString(DateUtils.TYPE_8) + " : " + result + "\n";
+        mResultTv.setText(mLog);
+        mScrollView.post(new Runnable() {
+            @Override
+            public void run() {
+                mScrollView.smoothScrollTo(ScreenUtils.getScreenWidth(getContext()), ScreenUtils.getScreenHeight(getContext()));
+            }
+        });
+    }
 }

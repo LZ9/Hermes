@@ -1,4 +1,4 @@
-package com.lodz.android.hermes;
+package com.lodz.android.hermesdemo;
 
 import android.os.Bundle;
 

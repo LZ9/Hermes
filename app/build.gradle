@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 27
     defaultConfig {
-        applicationId "com.lodz.android.hermes"
+        applicationId "com.lodz.android.hermesdemo"
         minSdkVersion 19
         targetSdkVersion 27
         versionCode 1

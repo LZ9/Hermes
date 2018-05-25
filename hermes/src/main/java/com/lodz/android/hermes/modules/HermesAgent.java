@@ -4,9 +4,11 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.lodz.android.hermes.contract.OnConnectListener;
-import com.lodz.android.hermes.contract.OnPushListener;
+import com.lodz.android.hermes.contract.OnSubscribeListener;
 import com.lodz.android.hermes.contract.OnSendListener;
-import com.lodz.android.hermes.contract.PushClient;
+import com.lodz.android.hermes.contract.Hermes;
+
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +17,7 @@ import java.util.List;
  * 推送管理
  * Created by zhouL on 2018/5/23.
  */
-public class PushManager {
+public class HermesAgent {
 
     /** 服务端地址 */
     private String mUrl;
@@ -23,27 +25,25 @@ public class PushManager {
     private String mClientId;
     /** 订阅主题列表 */
     private List<String> mSubTopics;
-    /** 推送回调 */
-    private OnPushListener mOnPushListener;
+    /** 订阅回调 */
+    private OnSubscribeListener mOnSubscribeListener;
     /** 连接监听器 */
     private OnConnectListener mOnConnectListener;
     /** 发送监听器 */
     private OnSendListener mOnSendListener;
-    /** 是否自动重连 */
-    private boolean isAutomaticReconnect = true;
-    /** 是否清除Session */
-    private boolean isCleanSession = false;
+    /** 连接配置 */
+    private MqttConnectOptions mMqttConnectOptions;
 
     /** 创建 */
-    public static PushManager create(){
-        return new PushManager();
+    public static HermesAgent create(){
+        return new HermesAgent();
     }
 
     /**
      * 设置后台地址
      * @param url 地址
      */
-    public PushManager setUrl(String url){
+    public HermesAgent setUrl(String url){
         this.mUrl = url;
         return this;
     }
@@ -52,7 +52,7 @@ public class PushManager {
      * 设置客户端id
      * @param clientId 客户端id
      */
-    public PushManager setClientId(String clientId){
+    public HermesAgent setClientId(String clientId){
         this.mClientId = clientId;
         return this;
     }
@@ -61,7 +61,7 @@ public class PushManager {
      * 设置是否打印日志
      * @param isPrint 是否打印
      */
-    public PushManager setPrintLog(boolean isPrint){
+    public HermesAgent setPrintLog(boolean isPrint){
         PrintLog.setPrint(isPrint);
         return this;
     }
@@ -70,7 +70,7 @@ public class PushManager {
      * 设置多个订阅主题
      * @param subTopics 订阅主题
      */
-    public PushManager setSubTopics(List<String> subTopics){
+    public HermesAgent setSubTopics(List<String> subTopics){
         mSubTopics = subTopics;
         return this;
     }
@@ -79,7 +79,7 @@ public class PushManager {
      * 设置订阅主题
      * @param subTopic 订阅主题
      */
-    public PushManager setSubTopic(String subTopic){
+    public HermesAgent setSubTopic(String subTopic){
         mSubTopics = new ArrayList<>();
         mSubTopics.add(subTopic);
         return this;
@@ -89,8 +89,8 @@ public class PushManager {
      * 设置推送监听器
      * @param listener 监听器
      */
-    public PushManager setOnPushListener(OnPushListener listener){
-        mOnPushListener = listener;
+    public HermesAgent setOnSubscribeListener(OnSubscribeListener listener){
+        mOnSubscribeListener = listener;
         return this;
     }
 
@@ -98,7 +98,7 @@ public class PushManager {
      * 设置连接监听器
      * @param listener 监听器
      */
-    public PushManager setOnConnectListener(OnConnectListener listener){
+    public HermesAgent setOnConnectListener(OnConnectListener listener){
         mOnConnectListener = listener;
         return this;
     }
@@ -107,52 +107,29 @@ public class PushManager {
      * 设置发送监听器
      * @param listener 监听器
      */
-    public PushManager setOnSendListener(OnSendListener listener){
+    public HermesAgent setOnSendListener(OnSendListener listener){
         mOnSendListener = listener;
         return this;
     }
 
     /**
-     * 设置是否自动重连
-     * @param isAuto 是否自动重连
+     * 设置连接配置
+     * @param options 配置
      */
-    public PushManager setAutomaticReconnect(boolean isAuto) {
-        isAutomaticReconnect = isAuto;
-        return this;
-    }
-
-    /**
-     * 设置是否清空Session
-     * @param isClean 是否清空Session
-     */
-    public PushManager setCleanSession(boolean isClean) {
-        isCleanSession = isClean;
+    public HermesAgent setConnectOptions(MqttConnectOptions options){
+        mMqttConnectOptions = options;
         return this;
     }
 
     /** 构建推送客户端并自动连接 */
-    public PushClient buildConnect(Context context){
-        if (context == null){
-            throw new NullPointerException("push context is empty");
-        }
-        if (TextUtils.isEmpty(mUrl)) {
-            throw new NullPointerException("push url is empty");
-        }
-        if (TextUtils.isEmpty(mClientId)) {
-            throw new NullPointerException("push client is empty");
-        }
-        PushClient client = new PushClientImpl();
-        client.init(context.getApplicationContext(), mUrl, mClientId, isAutomaticReconnect, isCleanSession);
-        client.setSubTopic(mSubTopics);
-        client.setOnPushListener(mOnPushListener);
-        client.setOnConnectListener(mOnConnectListener);
-        client.setOnSendListener(mOnSendListener);
+    public Hermes buildConnect(Context context) throws NullPointerException{
+        Hermes client = build(context);
         client.connect();
         return client;
     }
 
     /** 构建推送客户端 */
-    public PushClient build(Context context){
+    public Hermes build(Context context) throws NullPointerException{
         if (context == null){
             throw new NullPointerException("push context is empty");
         }
@@ -162,10 +139,16 @@ public class PushManager {
         if (TextUtils.isEmpty(mClientId)) {
             throw new NullPointerException("push client is empty");
         }
-        PushClient client = new PushClientImpl();
-        client.init(context.getApplicationContext(), mUrl, mClientId, isAutomaticReconnect, isCleanSession);
+        if (mMqttConnectOptions == null){
+            mMqttConnectOptions = new MqttConnectOptions();
+            mMqttConnectOptions.setAutomaticReconnect(true);
+            mMqttConnectOptions.setCleanSession(false);
+        }
+
+        Hermes client = new HermesImpl();
+        client.init(context.getApplicationContext(), mUrl, mClientId, mMqttConnectOptions);
         client.setSubTopic(mSubTopics);
-        client.setOnPushListener(mOnPushListener);
+        client.setOnSubscribeListener(mOnSubscribeListener);
         client.setOnConnectListener(mOnConnectListener);
         client.setOnSendListener(mOnSendListener);
         return client;

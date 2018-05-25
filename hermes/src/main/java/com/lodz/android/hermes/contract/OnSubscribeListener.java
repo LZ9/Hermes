@@ -4,7 +4,7 @@ package com.lodz.android.hermes.contract;
  * 推送接口回调
  * Created by zhouL on 2018/5/23.
  */
-public interface OnPushListener {
+public interface OnSubscribeListener {
 
     /**
      * 主题订阅成功

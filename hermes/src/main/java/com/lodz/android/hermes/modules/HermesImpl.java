@@ -3,9 +3,9 @@ package com.lodz.android.hermes.modules;
 import android.content.Context;
 
 import com.lodz.android.hermes.contract.OnConnectListener;
-import com.lodz.android.hermes.contract.OnPushListener;
+import com.lodz.android.hermes.contract.OnSubscribeListener;
 import com.lodz.android.hermes.contract.OnSendListener;
-import com.lodz.android.hermes.contract.PushClient;
+import com.lodz.android.hermes.contract.Hermes;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
@@ -23,7 +23,7 @@ import java.util.List;
  * 推送客户端
  * Created by zhouL on 2018/5/23.
  */
-public class PushClientImpl implements PushClient {
+public class HermesImpl implements Hermes {
 
     /** 日志标签 */
     private static final String TAG = "pushClient";
@@ -32,8 +32,8 @@ public class PushClientImpl implements PushClient {
     private MqttAndroidClient mMqttClient;
     /** mqtt连接配置 */
     private MqttConnectOptions mMqttConnectOptions;
-    /** 推送监听器 */
-    private OnPushListener mOnPushListener;
+    /** 订阅监听器 */
+    private OnSubscribeListener mOnSubscribeListener;
     /** 连接监听器 */
     private OnConnectListener mOnConnectListener;
     /** 发送监听器 */
@@ -42,12 +42,15 @@ public class PushClientImpl implements PushClient {
     private List<String> mSubTopics;
 
     @Override
-    public void init(Context context, String url, String clientId, boolean isAutomaticReconnect, boolean isCleanSession) {
+    public void init(Context context, String url, String clientId, MqttConnectOptions options) {
         mMqttClient = new MqttAndroidClient(context, url, clientId);
         mMqttClient.setCallback(mMqttCallbackExtended);
-        mMqttConnectOptions = new MqttConnectOptions();
-        mMqttConnectOptions.setAutomaticReconnect(isAutomaticReconnect);
-        mMqttConnectOptions.setCleanSession(isCleanSession);
+        mMqttConnectOptions = options;
+        if (mMqttConnectOptions == null){
+            mMqttConnectOptions = new MqttConnectOptions();
+            mMqttConnectOptions.setAutomaticReconnect(true);
+            mMqttConnectOptions.setCleanSession(false);
+        }
     }
 
     /** mqtt接口回调 */
@@ -82,8 +85,8 @@ public class PushClientImpl implements PushClient {
             // 后台推送的消息到达客户端
             String msg = new String(message.getPayload(), Charset.forName("UTF-8"));
             PrintLog.i(TAG, "数据到达 : " + msg);
-            if (mOnPushListener != null){
-                mOnPushListener.onMsgArrived(topic, msg);
+            if (mOnSubscribeListener != null){
+                mOnSubscribeListener.onMsgArrived(topic, msg);
             }
         }
 
@@ -99,8 +102,8 @@ public class PushClientImpl implements PushClient {
     }
 
     @Override
-    public void setOnPushListener(OnPushListener listener) {
-        mOnPushListener = listener;
+    public void setOnSubscribeListener(OnSubscribeListener listener) {
+        mOnSubscribeListener = listener;
     }
 
     @Override
@@ -201,8 +204,8 @@ public class PushClientImpl implements PushClient {
                     @Override
                     public void onSuccess(IMqttToken asyncActionToken) {
                         PrintLog.v(TAG, topic + "订阅成功");
-                        if (mOnPushListener != null) {
-                            mOnPushListener.onSubscribeSuccess(topic);
+                        if (mOnSubscribeListener != null) {
+                            mOnSubscribeListener.onSubscribeSuccess(topic);
                         }
                     }
 
@@ -212,8 +215,8 @@ public class PushClientImpl implements PushClient {
                             exception = new RuntimeException("mqtt subscribe failure");
                         }
                         PrintLog.e(TAG, topic + "订阅失败 : " + exception.getCause());
-                        if (mOnPushListener != null) {
-                            mOnPushListener.onSubscribeFailure(topic, exception);
+                        if (mOnSubscribeListener != null) {
+                            mOnSubscribeListener.onSubscribeFailure(topic, exception);
                         }
                     }
                 });
@@ -221,8 +224,8 @@ public class PushClientImpl implements PushClient {
         }catch (Exception e){
             e.printStackTrace();
             PrintLog.e(TAG, "订阅失败 : " + e.getCause());
-            if (mOnPushListener != null) {
-                mOnPushListener.onSubscribeFailure("all", e);
+            if (mOnSubscribeListener != null) {
+                mOnSubscribeListener.onSubscribeFailure("all", e);
             }
         }
     }

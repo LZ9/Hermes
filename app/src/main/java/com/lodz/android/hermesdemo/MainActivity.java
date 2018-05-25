@@ -14,10 +14,10 @@ import com.lodz.android.core.utils.ScreenUtils;
 import com.lodz.android.core.utils.StringUtils;
 import com.lodz.android.core.utils.ToastUtils;
 import com.lodz.android.hermes.contract.OnConnectListener;
-import com.lodz.android.hermes.contract.OnPushListener;
+import com.lodz.android.hermes.contract.OnSubscribeListener;
 import com.lodz.android.hermes.contract.OnSendListener;
-import com.lodz.android.hermes.contract.PushClient;
-import com.lodz.android.hermes.modules.PushManager;
+import com.lodz.android.hermes.contract.Hermes;
+import com.lodz.android.hermes.modules.HermesAgent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +26,17 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AbsActivity {
+
+    /** 默认地址 */
+    private static final String DEFAULT_URL = "tcp://192.168.6.15:8080";
+    /** 默认客户端id */
+    private static final String DEFAULT_CLIENT_ID = "12345";
+    /** 默认订阅主题 */
+    private static final String DEFAULT_SUB_TOPIC = "test.topic";
+    /** 默认发送主题 */
+    private static final String DEFAULT_SEND_TOPIC = "test.client";
+    /** 默认发送内容 */
+    private static final String DEFAULT_SEND_CONTENT = "测试数据";
 
     /** 滚动控件 */
     @BindView(R.id.scroll_view)
@@ -67,7 +78,7 @@ public class MainActivity extends AbsActivity {
     /** 日志 */
     private String mLog = "";
     /** 推送客户端 */
-    private PushClient mPushClient;
+    private Hermes mHermes;
 
     @Override
     protected int getAbsLayoutId() {
@@ -107,7 +118,7 @@ public class MainActivity extends AbsActivity {
         mSendBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mPushClient == null || !mPushClient.isConnected()){
+                if (mHermes == null || !mHermes.isConnected()){
                     ToastUtils.showShort(getContext(), R.string.main_client_unconnected);
                     return;
                 }
@@ -119,7 +130,7 @@ public class MainActivity extends AbsActivity {
                     ToastUtils.showShort(getContext(), R.string.main_send_content_empty);
                     return;
                 }
-                mPushClient.sendTopic(mSendTpoicEdit.getText().toString(), mSendEdit.getText().toString());
+                mHermes.sendTopic(mSendTpoicEdit.getText().toString(), mSendEdit.getText().toString());
             }
         });
 
@@ -136,8 +147,8 @@ public class MainActivity extends AbsActivity {
         mDisconnectBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mPushClient != null && mPushClient.isConnected()){
-                    mPushClient.disconnect();
+                if (mHermes != null && mHermes.isConnected()){
+                    mHermes.disconnect();
                 }
             }
         });
@@ -146,19 +157,19 @@ public class MainActivity extends AbsActivity {
     @Override
     protected void initData() {
         super.initData();
-        mUrlEdit.setText("tcp://192.168.0.0:8080");
+        mUrlEdit.setText(DEFAULT_URL);
         mUrlEdit.setSelection(mUrlEdit.length());
 
-        mClientIdEdit.setText("12345");
+        mClientIdEdit.setText(DEFAULT_CLIENT_ID);
         mClientIdEdit.setSelection(mClientIdEdit.length());
 
-        mSubtopicEdit.setText("test.topic");
+        mSubtopicEdit.setText(DEFAULT_SUB_TOPIC);
         mSubtopicEdit.setSelection(mSubtopicEdit.length());
 
-        mSendTpoicEdit.setText("test.client");
+        mSendTpoicEdit.setText(DEFAULT_SEND_TOPIC);
         mSendTpoicEdit.setSelection(mSendTpoicEdit.length());
 
-        mSendEdit.setText("测试数据");
+        mSendEdit.setText(DEFAULT_SEND_CONTENT);
         mSendEdit.setSelection(mSendEdit.length());
     }
 
@@ -169,10 +180,10 @@ public class MainActivity extends AbsActivity {
      * @param subTopic 订阅主题
      */
     private void connect(String url, String clientId, List<String> subTopic) {
-        if (mPushClient != null && mPushClient.isConnected()){
+        if (mHermes != null && mHermes.isConnected()){
             return;
         }
-        mPushClient = PushManager.create()
+        mHermes = HermesAgent.create()
                 .setUrl(url)
                 .setClientId(clientId)
                 .setPrintLog(true)
@@ -204,7 +215,7 @@ public class MainActivity extends AbsActivity {
                         logResult("发送失败 : topic ---> " + topic + "    " + cause.getMessage());
                     }
                 })
-                .setOnPushListener(new OnPushListener() {
+                .setOnSubscribeListener(new OnSubscribeListener() {
 
                     @Override
                     public void onSubscribeSuccess(String topic) {

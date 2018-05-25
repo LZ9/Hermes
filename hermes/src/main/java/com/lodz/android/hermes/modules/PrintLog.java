@@ -16,7 +16,7 @@ class PrintLog {
     private static final int LOG_E = 4;
 
     /** 是否打印日志 */
-    private static boolean sIsPrint = true;
+    private static boolean sIsPrint = false;
 
     public static void setPrint(boolean isPrint) {
         sIsPrint = isPrint;

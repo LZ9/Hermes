@@ -6,5 +6,5 @@
 3. 发布1.0.1版本
 
 ## 扩展
-- [回到顶部](https://github.com/LZ9/AgileDev/blob/master/core/readme_core_update.md#Hermes更新记录)
+- [回到顶部](https://github.com/LZ9/Hermes/blob/master/hermes/readme_hermes_update.md#hermes更新记录)
 - [Hermes 主页](https://github.com/LZ9/Hermes)

@@ -2,18 +2,12 @@
 这个是基于 [paho.mqtt](https://github.com/eclipse/paho.mqtt.java) 开源库的封装，支持mqtt，可对后台主题进行订阅和发送。
 
 ## 目录
-- [1、涉及的support依赖](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#1涉及的support依赖)
-- [2、日志类PrintLog](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#2日志类printlog)
-- [3、网络状态类NetworkManager](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#3网络状态类networkmanager)
-- [4、加密相关](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#4加密相关)
-- [5、线程池ThreadPoolManager](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#5线程池threadpoolmanager)
-- [6、各种通用工具类](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#6各种通用工具类)
-- [7、缓存Cache](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#7缓存cache)
-- [8、通知帮助类NotificationUtils](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#8通知帮助类notificationutils)
-- [8、状态栏帮助类StatusBarUtil](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#9状态栏帮助类StatusBarUtil)
-- [扩展](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#扩展)
+- [1、添加Gradle依赖](https://github.com/LZ9/Hermes#1添加Gradle依赖)
+- [2、Hermes涉及的依赖库](https://github.com/LZ9/Hermes#2Hermes涉及的依赖库)
+- [3、使用方法](https://github.com/LZ9/Hermes#3使用方法)
+- [扩展](https://github.com/LZ9/Hermes#扩展)
 
-## 1、添加Gradle依赖：
+## 1、添加Gradle依赖
 ```
     compile 'cn.lodz:hermes:1.0.1'
 ```
@@ -116,11 +110,8 @@ Hermes的使用非常简单，仅需3步：
 
 ## 扩展
 
-- [更新记录](https://github.com/LZ9/AgileDev/blob/master/core/readme_core_update.md)
-- [回到顶部](https://github.com/LZ9/AgileDev/blob/master/core/readme_core.md#core库)
-- [AgileDev 主页](https://github.com/LZ9/AgileDev)
-- [了解 component](https://github.com/LZ9/AgileDev/blob/master/component/readme_component.md)
-- [了解 imageloader](https://github.com/LZ9/AgileDev/blob/master/imageloader/readme_imageloader.md)
+- [更新记录](https://github.com/LZ9/Hermes/blob/master/hermes/readme_hermes_update.md)
+- [回到顶部](https://github.com/LZ9/Hermes#hermes推送订阅)
 
 ## License
 - [Apache Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)

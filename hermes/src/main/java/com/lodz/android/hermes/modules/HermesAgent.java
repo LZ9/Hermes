@@ -67,6 +67,17 @@ public class HermesAgent {
     }
 
     /**
+     * 设置日志标签
+     * @param tag 标签
+     */
+    public HermesAgent setLogTag(String tag){
+        if (!TextUtils.isEmpty(tag)) {
+            HermesImpl.TAG = tag;
+        }
+        return this;
+    }
+
+    /**
      * 设置多个订阅主题
      * @param subTopics 订阅主题
      */

@@ -31,6 +31,7 @@ Hermes的使用非常简单，仅需3步：
             .setUrl(url)// 设置tcp地址和端口
             .setClientId(clientId)// 设置客户端id
             .setPrintLog(true)// 是否启用日志（默认是关闭的）
+            .setLogTag("HermesLog")// 设置日志标签
             .setSubTopics(subTopic)// 订阅多个主题
             .setSubTopic(subTopic)// 订阅单个主题
             .setConnectOptions(MqttConnectOptions)// 可以将自己创建的MqttConnectOptions对象配置后传入
@@ -61,7 +62,7 @@ Hermes的使用非常简单，仅需3步：
                     // 发送失败
                 }
             })
-            .setOnSubscribeListener(new OnPushListener() {// 设置订阅监听器
+            .setOnSubscribeListener(new OnSubscribeListener() {// 设置订阅监听器
 
                 @Override
                 public void onSubscribeSuccess(String topic) {

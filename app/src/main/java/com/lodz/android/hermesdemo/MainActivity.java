@@ -187,6 +187,7 @@ public class MainActivity extends AbsActivity {
                 .setUrl(url)
                 .setClientId(clientId)
                 .setPrintLog(true)
+                .setLogTag("HermesLog")
                 .setSubTopics(subTopic)
                 .setOnConnectListener(new OnConnectListener() {
                     @Override

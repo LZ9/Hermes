@@ -26,7 +26,7 @@ import java.util.List;
 public class HermesImpl implements Hermes {
 
     /** 日志标签 */
-    private static final String TAG = "pushClient";
+    public static String TAG = "HermesLog";
 
     /** mqtt服务端 */
     private MqttAndroidClient mMqttClient;

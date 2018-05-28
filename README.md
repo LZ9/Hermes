@@ -9,7 +9,7 @@
 
 ## 1、添加Gradle依赖
 ```
-    compile 'cn.lodz:hermes:1.0.1'
+    compile 'cn.lodz:hermes:1.0.3'
 ```
 
 ## 2、Hermes涉及的依赖库

@@ -150,11 +150,6 @@ public class HermesAgent {
         if (TextUtils.isEmpty(mClientId)) {
             throw new NullPointerException("push client is empty");
         }
-        if (mMqttConnectOptions == null){
-            mMqttConnectOptions = new MqttConnectOptions();
-            mMqttConnectOptions.setAutomaticReconnect(true);
-            mMqttConnectOptions.setCleanSession(false);
-        }
 
         Hermes client = new HermesImpl();
         client.init(context.getApplicationContext(), mUrl, mClientId, mMqttConnectOptions);

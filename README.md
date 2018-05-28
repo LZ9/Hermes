@@ -103,6 +103,7 @@ Hermes的使用非常简单，仅需3步：
     hermes.connect();// 连接后台
     hermes.disconnect();// 断开连接
     hermes.isConnected();// 是否已连接
+    hermes.subscribeTopic();// 订阅主题（订阅时机由Hermes内部把握，不建议外部来调用，不过这边预留了方法给有需要的小伙伴）
 ```
 
 - 如果你希望在build()后手动进行连接，可以调用connect()方法

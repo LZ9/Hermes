@@ -5,11 +5,12 @@
 - [1、添加Gradle依赖](https://github.com/LZ9/Hermes#1添加Gradle依赖)
 - [2、Hermes涉及的依赖库](https://github.com/LZ9/Hermes#2Hermes涉及的依赖库)
 - [3、使用方法](https://github.com/LZ9/Hermes#3使用方法)
+- [4、搭建推送测试后台](https://github.com/LZ9/Hermes#4搭建推送测试后台)
 - [扩展](https://github.com/LZ9/Hermes#扩展)
 
 ## 1、添加Gradle依赖
 ```
-    compile 'cn.lodz:hermes:1.0.3'
+    compile 'cn.lodz:hermes:1.0.5'
 ```
 
 ## 2、Hermes涉及的依赖库
@@ -109,6 +110,19 @@ Hermes的使用非常简单，仅需3步：
 - 如果你希望在build()后手动进行连接，可以调用connect()方法
 - 调用disconnect()方法可以手动断开连接
 - isConnected()可以告诉你当前的连接状态
+
+## 4、搭建推送测试后台
+#### 1）在工程目录下找到activemq5文件夹，进入目录：
+
+> activemq5 -> bin -> win64
+
+#### 2）双击activemq.bat打开，完成后打开浏览进入地址：
+
+> http://192.168.6.150:8161/admin/topics.jsp
+
+#### 3）会弹出登录框，输入账号（admin）密码（admin），进入测试后台
+#### 4）可以在Topics底下找到你订阅的主题，并发送信息到订阅该主题的手机
+
 
 ## 扩展
 

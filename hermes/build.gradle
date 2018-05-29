@@ -6,8 +6,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 27
-        versionCode 4
-        versionName "1.0.3"// 成功上传
+        versionCode 5
+        versionName "1.0.5"// 成功上传
     }
 
     buildTypes {
@@ -31,7 +31,7 @@ dependencies {
 //    userOrg = 'lz9'//bintray.com用户名
 //    groupId = 'cn.lodz'//jcenter上的路径
 //    artifactId = 'hermes'//项目名称
-//    publishVersion = '1.0.3'//版本号
+//    publishVersion = '1.0.5'//版本号
 //    desc = 'Hi, this is a mqtt lib'//描述，不重要
 //    website = 'https://github.com/LZ9/Hermes'//网站，不重要
 //}

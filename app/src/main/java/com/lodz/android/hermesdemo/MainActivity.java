@@ -1,7 +1,6 @@
 package com.lodz.android.hermesdemo;
 
 import android.os.Bundle;
-import android.support.v4.widget.NestedScrollView;
 import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
@@ -13,22 +12,23 @@ import com.lodz.android.core.utils.DateUtils;
 import com.lodz.android.core.utils.ScreenUtils;
 import com.lodz.android.core.utils.StringUtils;
 import com.lodz.android.core.utils.ToastUtils;
-import com.lodz.android.hermes.contract.OnConnectListener;
-import com.lodz.android.hermes.contract.OnSubscribeListener;
-import com.lodz.android.hermes.contract.OnSendListener;
 import com.lodz.android.hermes.contract.Hermes;
+import com.lodz.android.hermes.contract.OnConnectListener;
+import com.lodz.android.hermes.contract.OnSendListener;
+import com.lodz.android.hermes.contract.OnSubscribeListener;
 import com.lodz.android.hermes.modules.HermesAgent;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.core.widget.NestedScrollView;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AbsActivity {
 
     /** 默认地址 */
-    private static final String DEFAULT_URL = "tcp://192.168.6.15:8080";
+    private static final String DEFAULT_URL = "tcp://192.168.6.141:1883";
     /** 默认客户端id */
     private static final String DEFAULT_CLIENT_ID = "12345";
     /** 默认订阅主题 */
@@ -180,7 +180,10 @@ public class MainActivity extends AbsActivity {
      * @param subTopic 订阅主题
      */
     private void connect(String url, String clientId, List<String> subTopic) {
-        if (mHermes != null && mHermes.isConnected()){
+        if (mHermes != null){
+            if (!mHermes.isConnected()){
+                mHermes.connect();
+            }
             return;
         }
         mHermes = HermesAgent.create()

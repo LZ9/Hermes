@@ -1,13 +1,13 @@
 apply plugin: 'com.android.library'
-//apply plugin: 'com.novoda.bintray-release'
+//apply plugin: "guru.stefma.bintrayrelease" //stefma
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 27
-        versionCode 5
-        versionName "1.0.5"// 成功上传
+        targetSdkVersion 28
+        versionCode 6
+        versionName "1.0.6"// 未上传
     }
 
     buildTypes {
@@ -27,11 +27,11 @@ dependencies {
     api 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
 }
 
+//version = "1.0.5"
+//group = "cn.lodz"
 //publish {
-//    userOrg = 'lz9'//bintray.com用户名
-//    groupId = 'cn.lodz'//jcenter上的路径
-//    artifactId = 'hermes'//项目名称
-//    publishVersion = '1.0.5'//版本号
+//    userOrg = 'lz9'
+//    artifactId = 'hermes'
 //    desc = 'Hi, this is a mqtt lib'//描述，不重要
 //    website = 'https://github.com/LZ9/Hermes'//网站，不重要
 //}

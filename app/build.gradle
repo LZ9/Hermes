@@ -30,7 +30,7 @@ android {
 
 dependencies {
     // 组件库
-    implementation 'cn.lodz:Component:2.0.9'
+    implementation 'cn.lodz:Component:2.1.0'
     // butterknife
     implementation 'com.jakewharton:butterknife:10.0.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.0.0'

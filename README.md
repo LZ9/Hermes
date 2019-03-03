@@ -17,7 +17,7 @@
 该库引用了下列这些第三方库，你可以确认你的项目，排除重复的引用。
 ```
     dependencies {
-        api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.0'
+        api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
         api 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
     }
 ```

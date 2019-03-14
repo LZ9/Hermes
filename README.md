@@ -10,7 +10,7 @@
 
 ## 1、添加Gradle依赖
 ```
-    implementation 'cn.lodz:hermes:1.0.7'
+    implementation 'cn.lodz:hermes:1.0.8'
 ```
 
 ## 2、Hermes涉及的依赖库

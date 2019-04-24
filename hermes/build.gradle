@@ -7,7 +7,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 28
         versionCode 8
-        versionName "1.0.8"// 未上传
+        versionName "1.0.8"// 成功上传
     }
 
     buildTypes {
@@ -28,7 +28,7 @@ dependencies {
     api 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
 }
 
-//version = "1.0.7"
+//version = "1.0.8"
 //group = "cn.lodz"
 //publish {
 //    userOrg = 'lz9'

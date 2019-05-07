@@ -6,11 +6,12 @@
 - [2、Hermes涉及的依赖库](https://github.com/LZ9/Hermes#2Hermes涉及的依赖库)
 - [3、使用方法](https://github.com/LZ9/Hermes#3使用方法)
 - [4、搭建推送测试后台](https://github.com/LZ9/Hermes#4搭建推送测试后台)
+
 - [扩展](https://github.com/LZ9/Hermes#扩展)
 
 ## 1、添加Gradle依赖
 ```
-    implementation 'cn.lodz:hermes:1.0.8'
+    implementation 'cn.lodz:hermes:1.0.9'
 ```
 
 ## 2、Hermes涉及的依赖库
@@ -19,6 +20,7 @@
     dependencies {
         api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
         api 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
+        api "org.java-websocket:Java-WebSocket:1.4.0"
     }
 ```
 
@@ -29,13 +31,14 @@ Hermes的使用非常简单，仅需3步：
 ```
     Hermes hermes =
         HermesAgent.create()
+            .setConnectType(HermesAgent.ConnectType.MQTT)// 使用WebSocket可传入HermesAgent.ConnectType.WEB_SOCKET
             .setUrl(url)// 设置tcp地址和端口
-            .setClientId(clientId)// 设置客户端id
+            .setClientId(clientId)// 设置客户端id（使用WebSocket可不传）
             .setPrintLog(true)// 是否启用日志（默认是关闭的）
             .setLogTag("HermesLog")// 设置日志标签
-            .setSubTopics(subTopic)// 订阅多个主题
-            .setSubTopic(subTopic)// 订阅单个主题
-            .setConnectOptions(MqttConnectOptions)// 可以将自己创建的MqttConnectOptions对象配置后传入
+            .setSubTopics(subTopic)// 订阅多个主题（使用WebSocket可不传）
+            .setSubTopic(subTopic)// 订阅单个主题（使用WebSocket可不传）
+            .setConnectOptions(MqttConnectOptions)// 可以将自己创建的MqttConnectOptions对象配置后传入（使用WebSocket可不传）
             .setOnConnectListener(new OnConnectListener() {// 设置连接回调监听器
                 @Override
                 public void onConnectComplete(boolean isReconnected) {
@@ -93,7 +96,7 @@ Hermes的使用非常简单，仅需3步：
 
 #### 2）使用Hermes向后台发送信息
 ```
-    hermes.sendTopic(topic, content);
+    hermes.sendTopic(topic, content);（使用WebSocket主题topic可传空或空字符串）
 ```
 
 - 传入发送的主题和内容
@@ -111,7 +114,7 @@ Hermes的使用非常简单，仅需3步：
 - 调用disconnect()方法可以手动断开连接
 - isConnected()可以告诉你当前的连接状态
 
-## 4、搭建推送测试后台
+## 4、搭建MQTT推送测试后台
 #### 1）在工程目录下找到activemq5文件夹，进入目录：
 
 > 你会看到3个压缩包，分别是：activemq5.zip、lib.zip和optional.zip

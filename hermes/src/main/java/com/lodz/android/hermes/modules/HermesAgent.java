@@ -3,13 +3,17 @@ package com.lodz.android.hermes.modules;
 import android.content.Context;
 import android.text.TextUtils;
 
-import com.lodz.android.hermes.contract.OnConnectListener;
-import com.lodz.android.hermes.contract.OnSubscribeListener;
-import com.lodz.android.hermes.contract.OnSendListener;
+import androidx.annotation.IntDef;
+
 import com.lodz.android.hermes.contract.Hermes;
+import com.lodz.android.hermes.contract.OnConnectListener;
+import com.lodz.android.hermes.contract.OnSendListener;
+import com.lodz.android.hermes.contract.OnSubscribeListener;
 
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +22,16 @@ import java.util.List;
  * Created by zhouL on 2018/5/23.
  */
 public class HermesAgent {
+
+    /** 日常巡查状态 */
+    @IntDef({ConnectType.MQTT, ConnectType.WEB_SOCKET})
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface ConnectType {
+        /** mqtt订阅 */
+        int MQTT = 1;
+        /** WebSocket订阅 */
+        int WEB_SOCKET = 2;
+    }
 
     /** 服务端地址 */
     private String mUrl;
@@ -33,10 +47,26 @@ public class HermesAgent {
     private OnSendListener mOnSendListener;
     /** 连接配置 */
     private MqttConnectOptions mMqttConnectOptions;
+    /** 日志标签 */
+    private String mTag = "";
+    /** 连接类型 */
+    private int mType = ConnectType.MQTT;
+
+    private HermesAgent() {
+    }
 
     /** 创建 */
     public static HermesAgent create(){
         return new HermesAgent();
+    }
+
+    /**
+     * 设置连接类型
+     * @param type 类型
+     */
+    public HermesAgent setConnectType(@ConnectType int type){
+        this.mType = type;
+        return this;
     }
 
     /**
@@ -72,7 +102,7 @@ public class HermesAgent {
      */
     public HermesAgent setLogTag(String tag){
         if (!TextUtils.isEmpty(tag)) {
-            HermesImpl.TAG = tag;
+            mTag = tag;
         }
         return this;
     }
@@ -147,11 +177,19 @@ public class HermesAgent {
         if (TextUtils.isEmpty(mUrl)) {
             throw new NullPointerException("push url is empty");
         }
-        if (TextUtils.isEmpty(mClientId)) {
+        if (mType == ConnectType.MQTT && TextUtils.isEmpty(mClientId)) {
             throw new NullPointerException("push client is empty");
         }
 
-        Hermes client = new HermesImpl();
+        if (!TextUtils.isEmpty(mTag)) {
+            if (mType == ConnectType.MQTT) {
+                HermesImpl.TAG = mTag;
+            } else {
+                WebSocketImpl.TAG = mTag;
+            }
+        }
+
+        Hermes client = mType == ConnectType.MQTT ? new HermesImpl() : new WebSocketImpl();
         client.init(context.getApplicationContext(), mUrl, mClientId, mMqttConnectOptions);
         client.setSubTopic(mSubTopics);
         client.setOnSubscribeListener(mOnSubscribeListener);

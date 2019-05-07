@@ -34,8 +34,6 @@ dependencies {
     // butterknife
     implementation 'com.jakewharton:butterknife:10.1.0'
     annotationProcessor 'com.jakewharton:butterknife-compiler:10.1.0'
-    // WebSocket长连接
-    implementation "org.java-websocket:Java-WebSocket:1.4.0"
     // 推送组件
     implementation project(':hermes')
 }

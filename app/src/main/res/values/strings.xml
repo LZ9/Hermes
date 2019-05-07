@@ -19,6 +19,6 @@
 
     <string name="ws_title">WebSocket长连接</string>
     <string name="ws_github">Github：https://github.com/TooTallNate/Java-WebSocket</string>
-
+    <string name="ws_already_connect">已连接</string>
 
 </resources>

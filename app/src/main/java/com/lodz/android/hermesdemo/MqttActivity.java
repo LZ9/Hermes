@@ -222,6 +222,7 @@ public class MqttActivity extends BaseActivity {
             return;
         }
         mHermes = HermesAgent.create()
+                .setConnectType(HermesAgent.ConnectType.MQTT)
                 .setUrl(url)
                 .setClientId(clientId)
                 .setPrintLog(true)

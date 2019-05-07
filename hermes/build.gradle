@@ -1,5 +1,5 @@
 apply plugin: 'com.android.library'
-//apply plugin: "guru.stefma.bintrayrelease" //stefma
+//apply plugin: 'com.novoda.bintray-release'
 
 android {
     compileSdkVersion 28
@@ -28,11 +28,11 @@ dependencies {
     api 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
 }
 
-//version = "1.0.8"
-//group = "cn.lodz"
 //publish {
 //    userOrg = 'lz9'
+//    groupId = 'cn.lodz'
 //    artifactId = 'hermes'
-//    desc = 'Hi, this is a mqtt lib'//描述，不重要
-//    website = 'https://github.com/LZ9/Hermes'//网站，不重要
+//    publishVersion = '1.0.8'
+//    desc = 'Hi, this is a mqtt lib'
+//    website = 'https://github.com/LZ9/Hermes'
 //}

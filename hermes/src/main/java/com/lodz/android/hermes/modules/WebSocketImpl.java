@@ -64,7 +64,6 @@ public class WebSocketImpl implements Hermes {
                     reason = "连接断开";
                 }
                 if (code == CloseFrame.ABNORMAL_CLOSE){
-                    reason = "长时间未接收或发送信息";
                     if (mOnConnectListener != null){
                         mOnConnectListener.onConnectionLost(new SocketException(reason));
                     }

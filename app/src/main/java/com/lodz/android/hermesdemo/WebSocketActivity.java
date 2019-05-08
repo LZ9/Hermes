@@ -24,8 +24,14 @@ import com.lodz.android.hermes.contract.OnSendListener;
 import com.lodz.android.hermes.contract.OnSubscribeListener;
 import com.lodz.android.hermes.modules.HermesAgent;
 
+import java.util.concurrent.TimeUnit;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.reactivex.Observable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * WebSocket测试类
@@ -73,6 +79,8 @@ public class WebSocketActivity extends BaseActivity {
     private String mLog = "";
     /** 推送客户端 */
     private Hermes mHermes;
+    /** 保活订阅者 */
+    private Disposable mDisposable;
 
     @Override
     protected int getLayoutId() {
@@ -100,6 +108,7 @@ public class WebSocketActivity extends BaseActivity {
                 mHermes.disconnect();
             }
             mHermes = null;
+            mDisposable.dispose();
         }
         return super.onPressBack();
     }
@@ -172,6 +181,7 @@ public class WebSocketActivity extends BaseActivity {
                             }
                         })
                         .buildConnect(getContext().getApplicationContext());
+                initKeepAlive();
             }
         });
 
@@ -210,6 +220,29 @@ public class WebSocketActivity extends BaseActivity {
                 }
             }
         });
+    }
+
+    /** 初始化保活线程 */
+    private void initKeepAlive() {
+        mDisposable = Observable.interval(60, 60, TimeUnit.SECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(Schedulers.io())
+                .subscribe(new Consumer<Long>() {
+                    @Override
+                    public void accept(Long i) throws Exception {
+                        if (mHermes == null) {
+                            if (mDisposable != null) {
+                                mDisposable.dispose();
+                            }
+                            return;
+                        }
+                        if (!mHermes.isConnected()) {
+                            mHermes.disconnect();
+                            Thread.sleep(1000);
+                            mHermes.connect();
+                        }
+                    }
+                });
     }
 
     @Override

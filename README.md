@@ -93,6 +93,7 @@ Hermes的使用非常简单，仅需3步：
 - setConnectOptions()正常情况下不需要设置，内部默认的MqttConnectOptions包含了自动断线重连，如果需要深度定制再调用该方法
 - setOnConnectListener()、setOnSendListener()和setOnSubscribeListener()这3个监听器方法大家根据自己的业务需要选择监听即可
 - build()和buildConnect()和也是二选一调用，差别在于后者会在创建后自动帮你连接，建议传入的Context使用ApplicationContext
+- 使用WebSocket需要自己实现断线重连逻辑
 
 #### 2）使用Hermes向后台发送信息
 ```

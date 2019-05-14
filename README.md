@@ -1,5 +1,9 @@
 # Hermes推送订阅
-这个是基于 [paho.mqtt](https://github.com/eclipse/paho.mqtt.java) 开源库的封装，支持mqtt，可对后台主题进行订阅和发送。
+Hermes资瓷MQTT和WebSocket两种长连接推送。
+
+ - MQTT的实现基于 [paho.mqtt](https://github.com/eclipse/paho.mqtt.java) 开源库的封装，可对后台主题进行订阅和发送。
+
+ - WebSocket的实现基于 [Java-WebSocket](https://github.com/TooTallNate/Java-WebSocket) 开源库的封装，可实现双向推送。
 
 ## 目录
 - [1、添加Gradle依赖](https://github.com/LZ9/Hermes#1添加Gradle依赖)
@@ -88,12 +92,12 @@ Hermes的使用非常简单，仅需3步：
 ```
 
 - 小伙伴可以根据自己的需要选择方法进行设置
-- setUrl()和setClientId()一定要配置，否则会抛出空指针异常
-- setSubTopics()和setSubTopic()正常二选一进行调用，如果不设置将不会订阅后台的主题，订阅状态会通过setOnSubscribeListener()内的监听器回调
-- setConnectOptions()正常情况下不需要设置，内部默认的MqttConnectOptions包含了自动断线重连，如果需要深度定制再调用该方法
+- setUrl()一定要配置，否则会抛出空指针异常，如果选择MQTT连接方式setClientId()也同理必须设置
+- 使用MQTT方式setSubTopics()和setSubTopic()正常二选一进行调用，如果不设置将不会订阅后台的主题，订阅状态会通过setOnSubscribeListener()内的监听器回调
+- 使用MQTT方式setConnectOptions()正常情况下不需要设置，内部默认的MqttConnectOptions包含了自动断线重连，如果需要深度定制再调用该方法
 - setOnConnectListener()、setOnSendListener()和setOnSubscribeListener()这3个监听器方法大家根据自己的业务需要选择监听即可
 - build()和buildConnect()和也是二选一调用，差别在于后者会在创建后自动帮你连接，建议传入的Context使用ApplicationContext
-- 使用WebSocket需要自己实现断线重连逻辑
+- 使用WebSocket需要自己实现断线重连逻辑，我在demo中实现了一个简单的重连逻辑供小伙伴们参考[WebSocketActivity.java](https://github.com/LZ9/Hermes/blob/master/app/src/main/java/com/lodz/android/hermesdemo/WebSocketActivity.java)
 
 #### 2）使用Hermes向后台发送信息
 ```

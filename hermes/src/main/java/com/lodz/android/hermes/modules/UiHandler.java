@@ -8,7 +8,7 @@ import android.os.Message;
  * 把runnable post到UI线程执行的工具类
  * Created by zhouL on 2016/11/17.
  */
-public class UiHandler {
+class UiHandler {
 
     private static Handler sHandler;
 

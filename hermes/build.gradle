@@ -29,7 +29,7 @@ dependencies {
     // https://github.com/TooTallNate/Java-WebSocket
     api "org.java-websocket:Java-WebSocket:1.4.0"
 
-    implementation 'androidx.annotation:annotation:1.0.2'
+    implementation 'androidx.annotation:annotation:1.1.0'
 }
 
 //publish {

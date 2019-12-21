@@ -133,7 +133,7 @@ public class WebSocketActivity extends BaseActivity {
                     return;
                 }
                 mHermes = HermesAgent.create()
-                        .setConnectType(HermesAgent.ConnectType.WEB_SOCKET)
+                        .setConnectType(HermesAgent.WEB_SOCKET)
                         .setUrl(url)
                         .setPrintLog(true)
                         .setOnConnectListener(new OnConnectListener() {

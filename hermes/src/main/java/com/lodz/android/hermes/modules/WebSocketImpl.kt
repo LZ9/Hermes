@@ -2,6 +2,7 @@ package com.lodz.android.hermes.modules
 
 import android.content.Context
 import com.lodz.android.hermes.contract.*
+import kotlinx.coroutines.*
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.java_websocket.framing.CloseFrame
 import org.java_websocket.handshake.ServerHandshake
@@ -26,9 +27,14 @@ class WebSocketImpl : Hermes {
     private var mOnSendListener: OnSendListener? = null
     /** 路径 */
     private var mUrl: String = ""
+    /** 是否自动重连 */
+    private var isAutomaticReconnect = true
+    /** 是否需要重连 */
+    private var mJob: Job? = null
 
     override fun init(context: Context?, url: String, clientId: String?, options: MqttConnectOptions?) {
         mUrl = url
+        isAutomaticReconnect = options?.isAutomaticReconnect ?: true
         mWsClient = WsClient(url)
         mWsClient?.setOnWebSocketListener(object : OnWebSocketListener {
             override fun onOpen(handshakedata: ServerHandshake?) {
@@ -59,6 +65,7 @@ class WebSocketImpl : Hermes {
                 mOnConnectListener?.onConnectFailure(e)
             }
         })
+
     }
 
     override fun setSubTopic(topics: List<String>?) {}
@@ -95,9 +102,16 @@ class WebSocketImpl : Hermes {
             init(null, mUrl, null, null)
         }
         mWsClient?.connect()
+        mJob?.cancel()
+        mJob = null
+        if (isAutomaticReconnect){
+            setReconnect()
+        }
     }
 
     override fun disconnect() {
+        mJob?.cancel()
+        mJob = null
         mWsClient?.close()
         mWsClient = null
     }
@@ -111,4 +125,31 @@ class WebSocketImpl : Hermes {
             mTag = tag
         }
     }
+
+    /** 设置重连 */
+    private fun setReconnect() {
+        mJob = GlobalScope.launch(Dispatchers.IO) {
+            try {
+                PrintLog.i(mTag, "保活进程启动")
+                while (true) {
+                    delay(60 * 1000)
+                    if (mWsClient == null) {
+                        mJob?.cancel()
+                        return@launch
+                    }
+                    if (!isConnected()) {
+                        PrintLog.d(mTag, "通道重连")
+                        mWsClient?.close()
+                        mWsClient = null
+                        delay(2000)
+                        connect()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                PrintLog.e(mTag, "保活进程中断")
+            }
+        }
+    }
+
 }

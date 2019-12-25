@@ -15,7 +15,7 @@ Hermes资瓷MQTT和WebSocket两种长连接推送。
 
 ## 1、添加Gradle依赖
 ```
-    implementation 'cn.lodz:hermes:1.1.0'
+    implementation 'cn.lodz:hermes:2.0.0'
 ```
 
 ## 2、Hermes涉及的依赖库
@@ -35,7 +35,7 @@ Hermes的使用非常简单，仅需3步：
 ```
     Hermes hermes =
         HermesAgent.create()
-            .setConnectType(HermesAgent.ConnectType.MQTT)// 使用WebSocket可传入HermesAgent.ConnectType.WEB_SOCKET
+            .setConnectType(HermesAgent.MQTT)// 使用WebSocket可传入HermesAgent.WEB_SOCKET
             .setUrl(url)// 设置tcp地址和端口
             .setClientId(clientId)// 设置客户端id（使用WebSocket可不传）
             .setPrintLog(true)// 是否启用日志（默认是关闭的）
@@ -88,7 +88,7 @@ Hermes的使用非常简单，仅需3步：
                 }
             })
             .build(getContext().getApplicationContext())// 构建Hermes对象
-            .buildConnect(getContext().getApplicationContext());// 构建Hermes对象并自动连接后台
+            .buildConnect(getContext().getApplicationContext())// 构建Hermes对象并自动连接后台
 ```
 
 - 小伙伴可以根据自己的需要选择方法进行设置
@@ -97,7 +97,12 @@ Hermes的使用非常简单，仅需3步：
 - 使用MQTT方式setConnectOptions()正常情况下不需要设置，内部默认的MqttConnectOptions包含了自动断线重连，如果需要深度定制再调用该方法
 - setOnConnectListener()、setOnSendListener()和setOnSubscribeListener()这3个监听器方法大家根据自己的业务需要选择监听即可
 - build()和buildConnect()和也是二选一调用，差别在于后者会在创建后自动帮你连接，建议传入的Context使用ApplicationContext
-- 使用WebSocket需要自己实现断线重连逻辑，我在demo中实现了一个简单的重连逻辑供小伙伴们参考[WebSocketActivity.java](https://github.com/LZ9/Hermes/blob/master/app/src/main/java/com/lodz/android/hermesdemo/WebSocketActivity.java)
+- WebSocket内部已实现自动断线重连机制，如果要关闭可以通过以下配置:
+```
+    val options = MqttConnectOptions()
+    options.isAutomaticReconnect = false
+    setConnectOptions(options)
+```
 
 #### 2）使用Hermes向后台发送信息
 ```

@@ -115,33 +115,29 @@
         android:layout_marginBottom="5dp"
         android:orientation="horizontal">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/slient_btn"
+            style="?android:attr/borderlessButtonStyle"
             android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_gravity="end|bottom"
+            android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:background="@color/colorAccent"
-            android:elevation="4sp"
             android:text="@string/mqtt_slient"
-            android:textColor="@color/white"
-            tools:targetApi="lollipop" />
+            android:textAllCaps="false"
+            android:textColor="@color/white" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/unslient_btn"
+            style="?android:attr/borderlessButtonStyle"
             android:layout_width="0dp"
-            android:layout_height="40dp"
-            android:layout_gravity="end|bottom"
+            android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
-            android:background="@color/colorAccent"
-            android:elevation="4sp"
             android:text="@string/mqtt_unslient"
-            android:textColor="@color/white"
-            tools:targetApi="lollipop" />
+            android:textAllCaps="false"
+            android:textColor="@color/white" />
 
     </LinearLayout>
 

@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.core.widget.NestedScrollView
+import com.google.android.material.button.MaterialButton
 import com.lodz.android.corekt.anko.*
 import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.corekt.utils.StringUtils
@@ -70,9 +71,9 @@ class MqttActivity : BaseActivity(){
     private val mDisconnectBtn by bindView<Button>(R.id.disconnect_btn)
 
     /** 静默按钮 */
-    private val mSlientBtn by bindView<Button>(R.id.slient_btn)
+    private val mSlientBtn by bindView<MaterialButton>(R.id.slient_btn)
     /** 非静默按钮 */
-    private val mUnslientBtn by bindView<Button>(R.id.unslient_btn)
+    private val mUnslientBtn by bindView<MaterialButton>(R.id.unslient_btn)
 
 
     /** 日志 */

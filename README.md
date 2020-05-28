@@ -24,7 +24,7 @@ Hermes资瓷MQTT和WebSocket两种长连接推送。
     dependencies {
         api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
         api 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
-        api "org.java-websocket:Java-WebSocket:1.4.0"
+        api "org.java-websocket:Java-WebSocket:1.4.1"
     }
 ```
 
@@ -40,6 +40,7 @@ Hermes的使用非常简单，仅需3步：
             .setClientId(clientId)// 设置客户端id（使用WebSocket可不传）
             .setPrintLog(true)// 是否启用日志（默认是关闭的）
             .setLogTag("HermesLog")// 设置日志标签
+            .setSilent(true)// 设置是否保持连接静默不接收消息（默认false）
             .setSubTopics(subTopic)// 订阅多个主题（使用WebSocket可不传）
             .setSubTopic(subTopic)// 订阅单个主题（使用WebSocket可不传）
             .setConnectOptions(MqttConnectOptions)// 可以将自己创建的MqttConnectOptions对象配置后传入（使用WebSocket可不传）
@@ -139,11 +140,13 @@ Hermes的使用非常简单，仅需3步：
 
 #### 5）然后回到activemq5文件夹目录下，进入下面的路径：
 
-> bin -> win64
+> bin -> win64 -> activemq.bat
 
 #### 6）双击activemq.bat打开，完成后打开浏览进入地址：
 
 > http://192.168.6.150:8161/admin/topics.jsp
+>
+> （具体IP以你PC本机IP为主）
 
 #### 7）会弹出登录框，输入账号（admin）密码（admin），进入测试后台
 

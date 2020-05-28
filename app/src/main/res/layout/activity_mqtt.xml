@@ -105,6 +105,48 @@
 
     <View
         android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@color/color_d9d9d9" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/slient_btn"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end|bottom"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp"
+            android:layout_weight="1"
+            android:background="@color/colorAccent"
+            android:elevation="4sp"
+            android:text="@string/mqtt_slient"
+            android:textColor="@color/white"
+            tools:targetApi="lollipop" />
+
+        <Button
+            android:id="@+id/unslient_btn"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end|bottom"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp"
+            android:layout_weight="1"
+            android:background="@color/colorAccent"
+            android:elevation="4sp"
+            android:text="@string/mqtt_unslient"
+            android:textColor="@color/white"
+            tools:targetApi="lollipop" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
         android:layout_height="5dp"
         android:background="@color/color_d9d9d9" />
 
@@ -131,8 +173,8 @@
             android:layout_width="60dp"
             android:layout_height="40dp"
             android:layout_gravity="end|bottom"
-            android:layout_marginBottom="60dp"
             android:layout_marginEnd="10dp"
+            android:layout_marginBottom="60dp"
             android:background="@color/colorAccent"
             android:elevation="4sp"
             android:text="@string/mqtt_clean"

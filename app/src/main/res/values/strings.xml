@@ -11,6 +11,8 @@
     <string name="mqtt_send_hint">请输入发送内容</string>
     <string name="mqtt_clean">清空</string>
     <string name="mqtt_disconnect">断开</string>
+    <string name="mqtt_slient">静默</string>
+    <string name="mqtt_unslient">非静默</string>
     <string name="mqtt_url_empty">ip和端口号不能为空</string>
     <string name="mqtt_client_id_empty">客户端id不能为空</string>
     <string name="mqtt_send_topic_empty">发送主题不能为空</string>

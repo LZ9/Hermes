@@ -43,4 +43,9 @@ interface Hermes {
     /** 设置日志标签[tag] */
     fun setTag(tag: String)
 
+    /** 设置是否保持静默不接收消息提醒[isSilent] */
+    fun setSilent(isSilent: Boolean)
+
+    /** 是否保持静默不接收消息提醒 */
+    fun isSilent(): Boolean
 }

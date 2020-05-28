@@ -69,6 +69,12 @@ class MqttActivity : BaseActivity(){
     /** 断开按钮 */
     private val mDisconnectBtn by bindView<Button>(R.id.disconnect_btn)
 
+    /** 静默按钮 */
+    private val mSlientBtn by bindView<Button>(R.id.slient_btn)
+    /** 非静默按钮 */
+    private val mUnslientBtn by bindView<Button>(R.id.unslient_btn)
+
+
     /** 日志 */
     private var mLog = ""
     /** 推送客户端 */
@@ -141,6 +147,16 @@ class MqttActivity : BaseActivity(){
         // 断开按钮
         mDisconnectBtn.setOnClickListener {
             mHermes?.disconnect()
+        }
+
+        // 设置静默
+        mSlientBtn.setOnClickListener {
+            mHermes?.setSilent(true)
+        }
+
+        // 设置非静默
+        mUnslientBtn.setOnClickListener {
+            mHermes?.setSilent(false)
         }
     }
 

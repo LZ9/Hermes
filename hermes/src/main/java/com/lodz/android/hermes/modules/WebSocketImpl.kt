@@ -31,6 +31,8 @@ class WebSocketImpl : Hermes {
     private var isAutomaticReconnect = true
     /** 是否需要重连 */
     private var mJob: Job? = null
+    /** 是否静默 */
+    private var isSilent: Boolean = false
 
     override fun init(context: Context?, url: String, clientId: String?, options: MqttConnectOptions?) {
         mUrl = url
@@ -43,6 +45,9 @@ class WebSocketImpl : Hermes {
             }
 
             override fun onMessage(message: String) {
+                if (isSilent){// 静默时不往外推送数据
+                    return
+                }
                 PrintLog.i(mTag, "数据到达 ： $message")
                 mOnSubscribeListener?.onMsgArrived("", message)
             }
@@ -125,6 +130,12 @@ class WebSocketImpl : Hermes {
             mTag = tag
         }
     }
+
+    override fun setSilent(isSilent: Boolean) {
+        this.isSilent = isSilent
+    }
+
+    override fun isSilent(): Boolean = this.isSilent
 
     /** 设置重连 */
     private fun setReconnect() {

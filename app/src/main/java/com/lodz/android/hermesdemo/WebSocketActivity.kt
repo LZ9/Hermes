@@ -52,6 +52,11 @@ class WebSocketActivity : BaseActivity() {
     /** 断开按钮 */
     private val mDisconnectBtn by bindView<Button>(R.id.disconnect_btn)
 
+    /** 静默按钮 */
+    private val mSlientBtn by bindView<Button>(R.id.slient_btn)
+    /** 非静默按钮 */
+    private val mUnslientBtn by bindView<Button>(R.id.unslient_btn)
+
     /** 日志 */
     private var mLog = ""
     /** 推送客户端 */
@@ -62,7 +67,7 @@ class WebSocketActivity : BaseActivity() {
     override fun findViews(savedInstanceState: Bundle?) {
         super.findViews(savedInstanceState)
         initTitleBarLayout(getTitleBarLayout())
-        StatusBarUtil.setColor(window, getColorCompat(R.color.colorPrimary), 0f)
+        StatusBarUtil.setColor(window, getColorCompat(R.color.colorPrimary))
     }
 
     private fun initTitleBarLayout(titleBarLayout: TitleBarLayout) {
@@ -160,6 +165,14 @@ class WebSocketActivity : BaseActivity() {
         // 断开按钮
         mDisconnectBtn.setOnClickListener {
             mHermes?.disconnect()
+        }
+
+        mSlientBtn.setOnClickListener {
+            mHermes?.setSilent(true)
+        }
+
+        mUnslientBtn.setOnClickListener {
+            mHermes?.setSilent(false)
         }
     }
 

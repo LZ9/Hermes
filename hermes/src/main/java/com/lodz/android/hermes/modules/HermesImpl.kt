@@ -30,6 +30,8 @@ class HermesImpl : Hermes {
     private var mOnSendListener: OnSendListener? = null
     /** 订阅主题列表 */
     private var mSubTopics: List<String>? = null
+    /** 是否静默 */
+    private var isSilent: Boolean = false
 
     override fun init(context: Context?, url: String, clientId: String?, options: MqttConnectOptions?) {
         mMqttClient = MqttAndroidClient(context, url, clientId)
@@ -56,6 +58,9 @@ class HermesImpl : Hermes {
         }
 
         override fun messageArrived(topic: String?, message: MqttMessage?) {
+            if (isSilent) {// 静默时不往外推送数据
+                return
+            }
             if (message == null) {
                 PrintLog.i(mTag, "数据到达 : null")
                 return
@@ -181,4 +186,10 @@ class HermesImpl : Hermes {
             mTag = tag
         }
     }
+
+    override fun setSilent(isSilent: Boolean) {
+        this.isSilent = isSilent
+    }
+
+    override fun isSilent(): Boolean = this.isSilent
 }

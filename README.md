@@ -15,7 +15,7 @@ Hermes资瓷MQTT和WebSocket两种长连接推送。
 
 ## 1、添加Gradle依赖
 ```
-    implementation 'cn.lodz:hermes:2.0.0'
+    implementation 'cn.lodz:hermes:2.0.2'
 ```
 
 ## 2、Hermes涉及的依赖库

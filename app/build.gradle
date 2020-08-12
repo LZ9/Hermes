@@ -4,15 +4,21 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 29
-    buildToolsVersion "29.0.3"
+    compileSdkVersion 30
+    buildToolsVersion "30.0.1"
 
     defaultConfig {
         applicationId "com.lodz.android.hermesdemo"
         minSdkVersion 19
-        targetSdkVersion 29
+        targetSdkVersion 30
         versionCode 1
         versionName "1.0"
+        multiDexEnabled = true// 启用dex分包
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     buildTypes {
@@ -30,7 +36,7 @@ android {
 
 dependencies {
     // 组件库
-    implementation 'com.lodz:pandora:1.3.0'
+    implementation 'com.lodz:pandora:1.4.0'
     // 推送组件
     implementation project(':hermes')
 }

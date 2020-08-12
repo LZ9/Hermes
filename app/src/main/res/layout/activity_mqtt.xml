@@ -47,8 +47,8 @@
 
         <Button
             android:id="@+id/connect_btn"
-            android:layout_width="60dp"
-            android:layout_height="30dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:background="@color/colorAccent"
             android:text="@string/mqtt_connect"
@@ -94,8 +94,8 @@
 
         <Button
             android:id="@+id/send_btn"
-            android:layout_width="60dp"
-            android:layout_height="30dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:background="@color/colorAccent"
             android:text="@string/mqtt_send"
@@ -166,8 +166,8 @@
 
         <Button
             android:id="@+id/clean_btn"
-            android:layout_width="60dp"
-            android:layout_height="40dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="end|bottom"
             android:layout_marginEnd="10dp"
             android:layout_marginBottom="60dp"
@@ -179,8 +179,8 @@
 
         <Button
             android:id="@+id/disconnect_btn"
-            android:layout_width="60dp"
-            android:layout_height="40dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="end|bottom"
             android:layout_margin="10dp"
             android:background="@color/colorAccent"

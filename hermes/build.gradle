@@ -11,7 +11,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 30
         versionCode 13
-        versionName "2.0.3"// 未上传
+        versionName "2.0.3"// 成功上传
     }
 
     buildTypes {
@@ -43,7 +43,7 @@ dependencies {
 //    userOrg = 'lz9'
 //    groupId = 'cn.lodz'
 //    artifactId = 'hermes'
-//    publishVersion = '2.0.2'
+//    publishVersion = '2.0.3'
 //    desc = 'Hi, this is a mqtt lib'
 //    website = 'https://github.com/LZ9/Hermes'
 //}

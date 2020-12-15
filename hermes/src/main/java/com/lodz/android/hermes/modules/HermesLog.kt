@@ -7,7 +7,7 @@ import androidx.annotation.IntDef
  * 日志打印
  * Created by zhouL on 2018/6/20.
  */
-internal object PrintLog {
+internal object HermesLog {
 
     /** 日志分段长度 */
     private const val LOG_SEGMENTED_LENGTH = 2500

@@ -40,7 +40,7 @@ class WebSocketImpl : Hermes {
         mWsClient = WsClient(url)
         mWsClient?.setOnWebSocketListener(object : OnWebSocketListener {
             override fun onOpen(handshakedata: ServerHandshake?) {
-                PrintLog.d(mTag, "WebSocket通道打开成功 ： ${handshakedata?.httpStatusMessage}")
+                HermesLog.d(mTag, "WebSocket通道打开成功 ： ${handshakedata?.httpStatusMessage}")
                 mOnConnectListener?.onConnectComplete(false)
             }
 
@@ -48,12 +48,12 @@ class WebSocketImpl : Hermes {
                 if (isSilent){// 静默时不往外推送数据
                     return
                 }
-                PrintLog.i(mTag, "数据到达 ： $message")
+                HermesLog.i(mTag, "数据到达 ： $message")
                 mOnSubscribeListener?.onMsgArrived("", message)
             }
 
             override fun onClose(code: Int, reason: String, remote: Boolean) {
-                PrintLog.v(mTag, "WebSocket连接关闭 -> code : $code ; reason : $reason ; remote : $remote")
+                HermesLog.v(mTag, "WebSocket连接关闭 -> code : $code ; reason : $reason ; remote : $remote")
                 var defReason = reason
                 if (code == CloseFrame.NORMAL) {
                     defReason = "连接断开"
@@ -66,7 +66,7 @@ class WebSocketImpl : Hermes {
             }
 
             override fun onError(e: Exception) {
-                PrintLog.e(mTag, "WebSocket连接异常 ： ${e.message}")
+                HermesLog.e(mTag, "WebSocket连接异常 ： ${e.message}")
                 mOnConnectListener?.onConnectFailure(e)
             }
         })
@@ -89,12 +89,12 @@ class WebSocketImpl : Hermes {
 
     override fun sendTopic(topic: String, content: String) {
         try {
-            PrintLog.i(mTag, "$topic  --- 数据发送 : $content")
+            HermesLog.i(mTag, "$topic  --- 数据发送 : $content")
             mWsClient?.send(content)
             mOnSendListener?.onSendComplete(topic, content)
         } catch (e: Exception) {
             e.printStackTrace()
-            PrintLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
+            HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
             mOnSendListener?.onSendFailure(topic, e)
         }
     }
@@ -141,7 +141,7 @@ class WebSocketImpl : Hermes {
     private fun setReconnect() {
         mJob = GlobalScope.launch(Dispatchers.IO) {
             try {
-                PrintLog.i(mTag, "保活进程启动")
+                HermesLog.i(mTag, "保活进程启动")
                 while (true) {
                     delay(60 * 1000)
                     if (mWsClient == null) {
@@ -149,7 +149,7 @@ class WebSocketImpl : Hermes {
                         return@launch
                     }
                     if (!isConnected()) {
-                        PrintLog.d(mTag, "通道重连")
+                        HermesLog.d(mTag, "通道重连")
                         mWsClient?.close()
                         mWsClient = null
                         delay(2000)
@@ -158,7 +158,7 @@ class WebSocketImpl : Hermes {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                PrintLog.e(mTag, "保活进程中断")
+                HermesLog.e(mTag, "保活进程中断")
             }
         }
     }

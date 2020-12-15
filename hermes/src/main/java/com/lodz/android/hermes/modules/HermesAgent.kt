@@ -68,7 +68,7 @@ class HermesAgent private constructor() {
 
     /** 设置是否打印日志[isPrint] */
     fun setPrintLog(isPrint: Boolean): HermesAgent = this.apply {
-        PrintLog.setPrint(isPrint)
+        HermesLog.setPrint(isPrint)
     }
 
     /** 设置日志标签[tag] */

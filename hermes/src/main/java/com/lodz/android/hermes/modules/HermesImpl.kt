@@ -49,10 +49,10 @@ class HermesImpl : Hermes {
 
         override fun connectComplete(reconnect: Boolean, serverURI: String?) {
             if (reconnect) {
-                PrintLog.d(mTag, "mqtt重新连接上服务地址 : $serverURI")
+                HermesLog.d(mTag, "mqtt重新连接上服务地址 : $serverURI")
                 subscribeTopic()// 重新连接上需要再次订阅主题
             } else {
-                PrintLog.d(mTag, "mqtt连接上服务地址 : $serverURI")
+                HermesLog.d(mTag, "mqtt连接上服务地址 : $serverURI")
             }
             mOnConnectListener?.onConnectComplete(reconnect)
         }
@@ -62,19 +62,19 @@ class HermesImpl : Hermes {
                 return
             }
             if (message == null) {
-                PrintLog.i(mTag, "数据到达 : null")
+                HermesLog.i(mTag, "数据到达 : null")
                 return
             }
             // 后台推送的消息到达客户端
             val msg = String(message.payload, Charset.forName("UTF-8"))
-            PrintLog.i(mTag, "数据到达 : $msg")
+            HermesLog.i(mTag, "数据到达 : $msg")
             mOnSubscribeListener?.onMsgArrived(topic ?: "", msg)
         }
 
         override fun connectionLost(cause: Throwable?) {
             val defCause = cause ?: RuntimeException("mqtt connection lost")
             mOnConnectListener?.onConnectionLost(defCause)// 连接丢失
-            PrintLog.e(mTag, "mqtt连接丢失 : ${defCause.cause}")
+            HermesLog.e(mTag, "mqtt连接丢失 : ${defCause.cause}")
         }
 
         override fun deliveryComplete(token: IMqttDeliveryToken?) {}
@@ -102,11 +102,11 @@ class HermesImpl : Hermes {
             message.payload = content.toByteArray()
             mMqttClient?.publish(topic, message)
             mOnSendListener?.onSendComplete(topic, content)
-            PrintLog.i(mTag, "$topic  --- 数据发送 : $content")
+            HermesLog.i(mTag, "$topic  --- 数据发送 : $content")
         } catch (e: Exception) {
             e.printStackTrace()
             mOnSendListener?.onSendFailure(topic, e)
-            PrintLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
+            HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
         }
     }
 
@@ -129,14 +129,14 @@ class HermesImpl : Hermes {
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                     val defException = exception ?: RuntimeException("mqtt connection failure")
                     mOnConnectListener?.onConnectFailure(defException)
-                    PrintLog.e(mTag, "mqtt连接失败 : ${defException.cause}")
+                    HermesLog.e(mTag, "mqtt连接失败 : ${defException.cause}")
                 }
             })
 
         } catch (e: Exception) {
             e.printStackTrace()
             mOnConnectListener?.onConnectFailure(e)
-            PrintLog.e(mTag, "mqtt连接失败 : ${e.cause}")
+            HermesLog.e(mTag, "mqtt连接失败 : ${e.cause}")
         }
     }
 
@@ -163,20 +163,20 @@ class HermesImpl : Hermes {
             list.forEach { topic ->
                 mMqttClient?.subscribe(topic, 0, null, object : IMqttActionListener {
                     override fun onSuccess(asyncActionToken: IMqttToken?) {
-                        PrintLog.v(mTag, "$topic 订阅成功")
+                        HermesLog.v(mTag, "$topic 订阅成功")
                         mOnSubscribeListener?.onSubscribeSuccess(topic)
                     }
 
                     override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                         val defException = exception ?: RuntimeException("mqtt subscribe failure")
-                        PrintLog.e(mTag, "$topic 订阅失败 : ${defException.cause}")
+                        HermesLog.e(mTag, "$topic 订阅失败 : ${defException.cause}")
                         mOnSubscribeListener?.onSubscribeFailure(topic, defException)
                     }
                 })
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            PrintLog.e(mTag, "订阅失败 : ${e.cause}")
+            HermesLog.e(mTag, "订阅失败 : ${e.cause}")
             mOnSubscribeListener?.onSubscribeFailure("all", e)
         }
     }

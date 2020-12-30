@@ -36,7 +36,7 @@ android {
 
 dependencies {
     // 组件库
-    implementation 'com.lodz:pandora:1.5.1'
+    implementation 'com.lodz:pandora:1.5.4'
     // 推送组件
     implementation project(':hermes')
 }

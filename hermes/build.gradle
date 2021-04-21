@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
-//apply plugin: 'com.novoda.bintray-release'
+//apply from: 'publish.gradle'
 
 android {
     compileSdkVersion 30
@@ -11,7 +11,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 30
         versionCode 15
-        versionName "2.0.5"// 未上传
+        versionName "2.0.6"// 成功上传
     }
 
     buildTypes {
@@ -28,22 +28,13 @@ android {
 
 dependencies {
     // https://github.com/eclipse/paho.mqtt.android
-    api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
+    api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
     api 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
     // https://github.com/TooTallNate/Java-WebSocket
-    api "org.java-websocket:Java-WebSocket:1.5.1"
+    api 'org.java-websocket:Java-WebSocket:1.5.2'
 
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.annotation:annotation:1.2.0'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.4.32'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.4.3'
 }
-
-//publish {
-//    userOrg = 'lz9'
-//    groupId = 'cn.lodz'
-//    artifactId = 'hermes'
-//    publishVersion = '2.0.4'
-//    desc = 'Hi, this is a mqtt lib'
-//    website = 'https://github.com/LZ9/Hermes'
-//}

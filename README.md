@@ -14,17 +14,25 @@ Hermes资瓷MQTT和WebSocket两种长连接推送。
 - [扩展](https://github.com/LZ9/Hermes#扩展)
 
 ## 1、添加Gradle依赖
+由于jcenter删库跑路，请大家添加mavenCentral依赖，并引用最新版本（为了配合迁移，引用的域名从**com.lodz**改为**ink.lodz**）
 ```
-    implementation 'cn.lodz:hermes:2.0.4'
+    repositories {
+        ...
+        mavenCentral()
+        ...
+    }
+```
+```
+    implementation 'ink.lodz:hermes:2.0.6'
 ```
 
 ## 2、Hermes涉及的依赖库
 该库引用了下列这些第三方库，你可以确认你的项目，排除重复的引用。
 ```
     dependencies {
-        api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.1'
+        api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
         api 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
-        api "org.java-websocket:Java-WebSocket:1.4.1"
+        api 'org.java-websocket:Java-WebSocket:1.5.2'
     }
 ```
 

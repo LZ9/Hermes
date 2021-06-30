@@ -18,6 +18,7 @@ import com.lodz.android.hermes.contract.OnSubscribeListener
 import com.lodz.android.hermes.modules.HermesAgent
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.widget.base.TitleBarLayout
+import java.nio.ByteBuffer
 
 /**
  * WebSocket测试类
@@ -121,6 +122,14 @@ class WebSocketActivity : BaseActivity() {
                     .setOnSendListener(object :OnSendListener{
                         override fun onSendComplete(topic: String, content: String) {
                             logResult("发送成功 : topic ---> $topic   $content")
+                        }
+
+                        override fun onSendComplete(topic: String, data: ByteArray) {
+                            logResult("发送成功 : topic ---> $topic   $data")
+                        }
+
+                        override fun onSendComplete(topic: String, bytes: ByteBuffer) {
+                            logResult("发送成功 : topic ---> $topic   $bytes")
                         }
 
                         override fun onSendFailure(topic: String, cause: Throwable) {

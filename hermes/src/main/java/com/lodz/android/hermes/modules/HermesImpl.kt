@@ -7,6 +7,7 @@ import com.lodz.android.hermes.contract.OnSendListener
 import com.lodz.android.hermes.contract.OnSubscribeListener
 import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.*
+import java.nio.ByteBuffer
 import java.nio.charset.Charset
 
 /**
@@ -98,11 +99,33 @@ class HermesImpl : Hermes {
 
     override fun sendTopic(topic: String, content: String) {
         try {
-            val message = MqttMessage()
-            message.payload = content.toByteArray()
-            mMqttClient?.publish(topic, message)
+            mMqttClient?.publish(topic, MqttMessage(content.toByteArray()))
             mOnSendListener?.onSendComplete(topic, content)
             HermesLog.i(mTag, "$topic  --- 数据发送 : $content")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            mOnSendListener?.onSendFailure(topic, e)
+            HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
+        }
+    }
+
+    override fun sendTopic(topic: String, data: ByteArray) {
+        try {
+            mMqttClient?.publish(topic, MqttMessage(data))
+            mOnSendListener?.onSendComplete(topic, data)
+            HermesLog.i(mTag, "$topic  --- 数据发送 : $data")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            mOnSendListener?.onSendFailure(topic, e)
+            HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
+        }
+    }
+
+    override fun sendTopic(topic: String, bytes: ByteBuffer) {
+        try {
+            mMqttClient?.publish(topic, MqttMessage(toByteArray(bytes)))
+            mOnSendListener?.onSendComplete(topic, bytes)
+            HermesLog.i(mTag, "$topic  --- 数据发送 : $bytes")
         } catch (e: Exception) {
             e.printStackTrace()
             mOnSendListener?.onSendFailure(topic, e)
@@ -192,4 +215,15 @@ class HermesImpl : Hermes {
     }
 
     override fun isSilent(): Boolean = this.isSilent
+
+    private fun toByteArray(buffer: ByteBuffer): ByteArray {
+        buffer.flip()
+        val length = buffer.limit() - buffer.position()
+
+        val byte = ByteArray(length)
+        for (i in byte.indices) {
+            byte[i] = buffer.get()
+        }
+        return byte;
+    }
 }

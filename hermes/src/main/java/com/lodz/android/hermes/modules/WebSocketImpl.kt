@@ -7,6 +7,7 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.java_websocket.framing.CloseFrame
 import org.java_websocket.handshake.ServerHandshake
 import java.net.SocketException
+import java.nio.ByteBuffer
 
 /**
  * WebSocket实现
@@ -92,6 +93,30 @@ class WebSocketImpl : Hermes {
             HermesLog.i(mTag, "$topic  --- 数据发送 : $content")
             mWsClient?.send(content)
             mOnSendListener?.onSendComplete(topic, content)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
+            mOnSendListener?.onSendFailure(topic, e)
+        }
+    }
+
+    override fun sendTopic(topic: String, data: ByteArray) {
+        try {
+            HermesLog.i(mTag, "$topic  --- 数据发送 : $data")
+            mWsClient?.send(data)
+            mOnSendListener?.onSendComplete(topic, data)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
+            mOnSendListener?.onSendFailure(topic, e)
+        }
+    }
+
+    override fun sendTopic(topic: String, bytes: ByteBuffer) {
+        try {
+            HermesLog.i(mTag, "$topic  --- 数据发送 : $bytes")
+            mWsClient?.send(bytes)
+            mOnSendListener?.onSendComplete(topic, bytes)
         } catch (e: Exception) {
             e.printStackTrace()
             HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")

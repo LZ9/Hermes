@@ -2,6 +2,7 @@ package com.lodz.android.hermes.contract
 
 import android.content.Context
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
+import java.nio.ByteBuffer
 
 /**
  * 推送客户端
@@ -27,6 +28,12 @@ interface Hermes {
 
     /** 发送主题内容，主题[topic]，内容[content] */
     fun sendTopic(topic: String, content: String)
+
+    /** 发送主题内容，主题[topic]，内容[data] */
+    fun sendTopic(topic: String, data: ByteArray)
+
+    /** 发送主题内容，主题[topic]，内容[bytes] */
+    fun sendTopic(topic: String, bytes: ByteBuffer)
 
     /** 连接后台 */
     fun connect()

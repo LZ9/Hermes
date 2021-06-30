@@ -30,17 +30,15 @@
             android:textSize="14sp"
             tools:ignore="UnusedAttribute" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/connect_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_marginEnd="10dp"
-            android:background="@color/colorPrimary"
             android:backgroundTint="@color/colorPrimary"
             android:text="@string/mqtt_connect"
-            android:textColor="@color/white"
-            tools:targetApi="lollipop" />
+            android:textColor="@color/white" />
 
     </LinearLayout>
 
@@ -61,17 +59,15 @@
             android:textSize="14sp"
             tools:ignore="UnusedAttribute" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/send_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:layout_marginEnd="10dp"
-            android:background="@color/colorPrimary"
             android:backgroundTint="@color/colorPrimary"
             android:text="@string/mqtt_send"
-            android:textColor="@color/white"
-            tools:targetApi="lollipop" />
+            android:textColor="@color/white" />
     </LinearLayout>
 
     <View
@@ -88,7 +84,6 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/slient_btn"
-            style="?android:attr/borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
@@ -97,12 +92,10 @@
             android:backgroundTint="@color/colorPrimary"
             android:text="@string/mqtt_slient"
             android:textAllCaps="false"
-            android:textColor="@color/white"
-            tools:targetApi="lollipop" />
+            android:textColor="@color/white" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/unslient_btn"
-            style="?android:attr/borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
@@ -111,8 +104,7 @@
             android:backgroundTint="@color/colorPrimary"
             android:text="@string/mqtt_unslient"
             android:textAllCaps="false"
-            android:textColor="@color/white"
-            tools:targetApi="lollipop" />
+            android:textColor="@color/white" />
 
 
     </LinearLayout>
@@ -140,32 +132,28 @@
 
         </androidx.core.widget.NestedScrollView>
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/clean_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end|bottom"
             android:layout_marginEnd="10dp"
             android:layout_marginBottom="60dp"
-            android:background="@color/colorPrimary"
             android:backgroundTint="@color/colorPrimary"
             android:elevation="4sp"
             android:text="@string/mqtt_clean"
-            android:textColor="@color/white"
-            tools:targetApi="lollipop" />
+            android:textColor="@color/white" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/disconnect_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end|bottom"
             android:layout_margin="10dp"
-            android:background="@color/colorPrimary"
             android:backgroundTint="@color/colorPrimary"
             android:elevation="4sp"
             android:text="@string/mqtt_disconnect"
-            android:textColor="@color/white"
-            tools:targetApi="lollipop" />
+            android:textColor="@color/white" />
 
     </FrameLayout>
 

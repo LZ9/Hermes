@@ -9,10 +9,12 @@ import com.lodz.android.pandora.widget.base.TitleBarLayout
 
 class MainActivity : BaseActivity(){
 
-    /** 断开按钮 */
+    /** MQTT */
     private val mMqttBtn by bindView<MaterialButton>(R.id.mqtt_btn)
-    /** 断开按钮 */
+    /** Websocket客户端 */
     private val mWebsocketBtn by bindView<MaterialButton>(R.id.websocket_btn)
+    /** Websocket服务端 */
+    private val mWebsocketServerBtn by bindView<MaterialButton>(R.id.ws_server_btn)
 
     override fun getLayoutId(): Int = R.layout.activity_main
 

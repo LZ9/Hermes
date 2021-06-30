@@ -39,20 +39,20 @@ class WebSocketActivity : BaseActivity() {
     /** 地址输入框 */
     private val mUrlEdit by bindView<EditText>(R.id.url_edit)
     /** 连接按钮 */
-    private val mConnectBtn by bindView<Button>(R.id.connect_btn)
+    private val mConnectBtn by bindView<MaterialButton>(R.id.connect_btn)
     /** 发送内容输入框 */
     private val mSendEdit by bindView<EditText>(R.id.send_edit)
     /** 发送按钮 */
-    private val mSendBtn by bindView<Button>(R.id.send_btn)
+    private val mSendBtn by bindView<MaterialButton>(R.id.send_btn)
 
     /** 滚动控件 */
     private val mScrollView by bindView<NestedScrollView>(R.id.scroll_view)
     /** 日志 */
     private val mResultTv by bindView<TextView>(R.id.result_tv)
     /** 清空按钮 */
-    private val mCleanBtn by bindView<Button>(R.id.clean_btn)
+    private val mCleanBtn by bindView<MaterialButton>(R.id.clean_btn)
     /** 断开按钮 */
-    private val mDisconnectBtn by bindView<Button>(R.id.disconnect_btn)
+    private val mDisconnectBtn by bindView<MaterialButton>(R.id.disconnect_btn)
 
     /** 静默按钮 */
     private val mSlientBtn by bindView<MaterialButton>(R.id.slient_btn)

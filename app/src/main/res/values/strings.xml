@@ -18,9 +18,12 @@
     <string name="mqtt_send_topic_empty">发送主题不能为空</string>
     <string name="mqtt_send_content_empty">发送内容不能为空</string>
     <string name="mqtt_client_unconnected">请先连接服务端</string>
+    <string name="mqtt_github">Github：https://github.com/eclipse/paho.mqtt.android</string>
 
-    <string name="ws_title">WebSocket长连接</string>
+    <string name="ws_title">WebSocket客户端长连接</string>
     <string name="ws_github">Github：https://github.com/TooTallNate/Java-WebSocket</string>
     <string name="ws_already_connect">已连接</string>
+
+    <string name="ws_server_title">WebSocket服务的（APP作为服务端）</string>
 
 </resources>

@@ -22,4 +22,13 @@
         android:textAllCaps="false"
         android:textColor="@color/white" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/ws_server_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:text="@string/ws_server_title"
+        android:textAllCaps="false"
+        android:textColor="@color/white" />
+
 </LinearLayout>

@@ -1,5 +1,11 @@
 # Hermes更新记录
 
+##### 2021/07/03
+1. 发送数据方法和回调接口增加ByteArray和ByteBuffer的参数
+2. 更新kotlin插件版本
+3. 新增WebSocket服务端基类，支持APP作为WebSocket服务端收发数据
+4. 发布2.1.0版
+
 ##### 2021/04/21
 1. 修改域名
 2. 迁移发布到mavenCentral

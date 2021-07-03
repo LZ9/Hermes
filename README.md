@@ -23,7 +23,7 @@ Hermes资瓷MQTT和WebSocket两种长连接推送。
     }
 ```
 ```
-    implementation 'ink.lodz:hermes:2.0.6'
+    implementation 'ink.lodz:hermes:2.1.0'
 ```
 
 ## 2、Hermes涉及的依赖库

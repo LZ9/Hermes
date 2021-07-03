@@ -42,6 +42,14 @@
             tools:ignore="LockedOrientationActivity">
 
         </activity>
+
+        <activity
+            android:name=".WebsocketServerActivity"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity">
+
+        </activity>
+
     </application>
 
 </manifest>

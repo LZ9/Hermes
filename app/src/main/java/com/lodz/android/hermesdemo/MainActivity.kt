@@ -39,6 +39,10 @@ class MainActivity : BaseActivity(){
         mWebsocketBtn.setOnClickListener {
             WebSocketActivity.start(getContext())
         }
+
+        mWebsocketServerBtn.setOnClickListener {
+            WebsocketServerActivity.start(getContext())
+        }
     }
 
     override fun initData() {

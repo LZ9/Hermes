@@ -24,6 +24,14 @@
     <string name="ws_github">Github：https://github.com/TooTallNate/Java-WebSocket</string>
     <string name="ws_already_connect">已连接</string>
 
-    <string name="ws_server_title">WebSocket服务的（APP作为服务端）</string>
+    <string name="ws_server_title">WebSocket服务端</string>
+    <string name="ws_server_test">WS在线连接测试：http://www.websocket-test.com/</string>
+    <string name="ws_server_port_hint">请输入端口号</string>
+    <string name="ws_server_open">启动服务</string>
+    <string name="ws_server_close">关闭服务</string>
+    <string name="ws_server_clean">清空日志</string>
+    <string name="ws_server_send_hint">请输入发送内容</string>
+    <string name="ws_server_send">发送</string>
+    <string name="ws_server_unopen">服务未启动</string>
 
 </resources>

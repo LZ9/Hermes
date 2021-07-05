@@ -160,6 +160,17 @@ Hermes的使用非常简单，仅需3步：
 
 #### 8）可以在Topics底下找到你订阅的主题，并发送信息到订阅该主题的手机
 
+## 5、搭建一个App端的WebSocket服务器
+#### 方法一：继承默认的WebSocketServer类
+通过继承WebSocketServer类实现内部的抽象方法，来实现WebSocket服务端逻辑。
+
+#### 方法二：直接调用或继承封装后的BaseWebSocketServer类
+1. 我继承WebSocketServer实现了一个简单的封装基类 [BaseWebSocketServer.kt](https://github.com/LZ9/Hermes/blob/master/hermes/src/main/java/com/lodz/android/hermes/modules/BaseWebSocketServer.kt) 。
+2. 内部包含了主线程的监听器回调，以及连接上的客户端缓存。
+3. 简单业务可直接生成对象调用，复杂业务可以继承后自定义。
+4. 具体使用方法可以参考[WebsocketServerActivity.kt](https://github.com/LZ9/Hermes/blob/master/app/src/main/java/com/lodz/android/hermesdemo/WebsocketServerActivity.kt) ，有完整的例子。
+5. 可使用<http://www.websocket-test.com/>等网站来进行调试验证。
+
 ## 扩展
 
 - [更新记录](https://github.com/LZ9/Hermes/blob/master/hermes/readme_hermes_update.md)

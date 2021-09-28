@@ -10,8 +10,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 30
-        versionCode 17
-        versionName "2.1.0"// 成功上传
+        versionCode 18
+        versionName "2.1.1"// 未上传
     }
 
     buildTypes {
@@ -35,6 +35,5 @@ dependencies {
 
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.annotation:annotation:1.2.0'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.5.30"
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.4.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2'
 }

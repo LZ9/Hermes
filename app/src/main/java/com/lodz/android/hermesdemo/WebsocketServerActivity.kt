@@ -103,60 +103,62 @@ class WebsocketServerActivity : BaseActivity() {
     }
 
     private fun openWebSocketServer(port: Int) {
-        addLog("开启WebSocket服务端")
-        if (mWebSocketServer == null) {
-            mWebSocketServer = BaseWebSocketServer(port)
-            mWebSocketServer?.setOnWebSocketServerListener(object : OnWebSocketServerListener {
-                override fun onOpen(ws: WebSocket?, handshake: ClientHandshake?) {
-                    var name = "未知"
-                    if (ws != null){
-                        name = ws.remoteSocketAddress.hostName
-                    }
-                    addLog("$name 用户已连接上")
-                }
-
-                override fun onClose(ws: WebSocket?, code: Int, reason: String, isRemote: Boolean) {
-                    var name = "未知"
-                    if (ws != null){
-                        name = ws.remoteSocketAddress.hostName
-                    }
-                    val log = name.append(" 用户已断开")
-                        .append(" ; code : $code")
-                        .append(" ; reason : $reason")
-                        .append(" ; isRemote : $isRemote")
-                    addLog(log)
-                }
-
-
-                override fun onMessage(ws: WebSocket?, message: String) {
-                    var name = "未知"
-                    if (ws != null){
-                        name = ws.remoteSocketAddress.hostName
-                    }
-                    addLog("$name 用户发来消息：$message")
-                }
-
-                override fun onMessage(ws: WebSocket?, byteBuffer: ByteBuffer?) {
-                    var name = "未知"
-                    if (ws != null){
-                        name = ws.remoteSocketAddress.hostName
-                    }
-                    addLog("$name 用户发来消息：$byteBuffer")
-                }
-
-                override fun onError(ws: WebSocket?, e: Exception) {
-                    var name = "未知"
-                    if (ws != null){
-                        name = ws.remoteSocketAddress.hostName
-                    }
-                    addLog("$name 用户连接出现异常 ; message : ${e.message}")
-                }
-
-                override fun onStart() {
-                    addLog("WebSocket服务端已启动")
-                }
-            })
+        if (mWebSocketServer != null) {
+            addLog("服务已启动")
+            return
         }
+        addLog("开启WebSocket服务端")
+        mWebSocketServer = BaseWebSocketServer(port)
+        mWebSocketServer?.setOnWebSocketServerListener(object : OnWebSocketServerListener {
+            override fun onOpen(ws: WebSocket?, handshake: ClientHandshake?) {
+                var name = "未知"
+                if (ws != null){
+                    name = ws.remoteSocketAddress.hostName
+                }
+                addLog("$name 用户已连接上")
+            }
+
+            override fun onClose(ws: WebSocket?, code: Int, reason: String, isRemote: Boolean) {
+                var name = "未知"
+                if (ws != null){
+                    name = ws.remoteSocketAddress.hostName
+                }
+                val log = name.append(" 用户已断开")
+                    .append(" ; code : $code")
+                    .append(" ; reason : $reason")
+                    .append(" ; isRemote : $isRemote")
+                addLog(log)
+            }
+
+
+            override fun onMessage(ws: WebSocket?, message: String) {
+                var name = "未知"
+                if (ws != null){
+                    name = ws.remoteSocketAddress.hostName
+                }
+                addLog("$name 用户发来消息：$message")
+            }
+
+            override fun onMessage(ws: WebSocket?, byteBuffer: ByteBuffer?) {
+                var name = "未知"
+                if (ws != null){
+                    name = ws.remoteSocketAddress.hostName
+                }
+                addLog("$name 用户发来消息：$byteBuffer")
+            }
+
+            override fun onError(ws: WebSocket?, e: Exception) {
+                var name = "未知"
+                if (ws != null){
+                    name = ws.remoteSocketAddress.hostName
+                }
+                addLog("$name 用户连接出现异常 ; message : ${e.message}")
+            }
+
+            override fun onStart() {
+                addLog("WebSocket服务端已启动")
+            }
+        })
         mWebSocketServer?.isReuseAddr = true
         mWebSocketServer?.start()
     }

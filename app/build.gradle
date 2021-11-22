@@ -1,6 +1,5 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 
 android {
@@ -36,7 +35,7 @@ android {
 
 dependencies {
     // 组件库
-    implementation 'ink.lodz:pandora:1.7.7'
+    implementation 'ink.lodz:pandora:1.8.0'
     // 推送组件
     implementation project(':hermes')
 }

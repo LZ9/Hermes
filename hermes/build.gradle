@@ -10,7 +10,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 32
         versionCode 18
-        versionName "2.1.1"// 未上传
+        versionName "2.1.1"// 成功上传
     }
 
     buildTypes {

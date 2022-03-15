@@ -1,14 +1,12 @@
 package com.lodz.android.hermes.modules
 
 import android.content.Context
-import com.lodz.android.hermes.contract.Hermes
-import com.lodz.android.hermes.contract.OnConnectListener
-import com.lodz.android.hermes.contract.OnSendListener
-import com.lodz.android.hermes.contract.OnSubscribeListener
+import com.lodz.android.hermes.contract.*
 import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.*
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
+import java.util.LinkedHashSet
 
 /**
  * MQTT推送客户端实现
@@ -25,6 +23,8 @@ class HermesImpl : Hermes {
     private var mMqttConnectOptions: MqttConnectOptions? = null
     /** 订阅监听器 */
     private var mOnSubscribeListener: OnSubscribeListener? = null
+    /** 解除订阅监听器 */
+    private var mOnUnsubscribeListener: OnUnsubscribeListener? = null
     /** 连接监听器 */
     private var mOnConnectListener: OnConnectListener? = null
     /** 发送监听器 */
@@ -82,11 +82,19 @@ class HermesImpl : Hermes {
     }
 
     override fun setSubTopic(topics: List<String>?) {
-        mSubTopics = topics
+        val list: MutableList<String> = mSubTopics?.toMutableList() ?: arrayListOf()
+        list.addAll(topics ?: arrayListOf())
+        mSubTopics = LinkedHashSet(list).toList()
+        subscribeTopic()
     }
+
 
     override fun setOnSubscribeListener(listener: OnSubscribeListener?) {
         mOnSubscribeListener = listener
+    }
+
+    override fun setOnUnsubscribeListener(listener: OnUnsubscribeListener?) {
+        mOnUnsubscribeListener = listener
     }
 
     override fun setOnConnectListener(listener: OnConnectListener?) {
@@ -179,7 +187,12 @@ class HermesImpl : Hermes {
         if (list.isNullOrEmpty()) {
             return
         }
+        // 未初始化
         if (mMqttClient == null) {
+            return
+        }
+        // 未连接
+        if (!isConnected()){
             return
         }
         try {
@@ -203,6 +216,47 @@ class HermesImpl : Hermes {
             mOnSubscribeListener?.onSubscribeFailure("all", e)
         }
     }
+
+    override fun unsubscribe(topics: List<String>?) {
+        if (topics.isNullOrEmpty()) {
+            return
+        }
+        // 未初始化
+        if (mMqttClient == null) {
+            return
+        }
+        try {
+            topics.forEach { topic ->
+                mMqttClient?.unsubscribe(topic, null, object : IMqttActionListener {
+                    override fun onSuccess(asyncActionToken: IMqttToken?) {
+                        HermesLog.v(mTag, "$topic 解除订阅成功")
+                        val list = mSubTopics?.toMutableList() ?: arrayListOf()
+                        val iterator = list.iterator()
+                        while (iterator.hasNext()) {
+                            val next = iterator.next()
+                            if (next == topic) {
+                                iterator.remove()
+                            }
+                        }
+                        mSubTopics = list
+                        mOnUnsubscribeListener?.onUnsubscribeSuccess(topic)
+                    }
+
+                    override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                        val defException = exception ?: RuntimeException("mqtt unsubscribe failure")
+                        HermesLog.e(mTag, "$topic 解除订阅失败 : ${defException.cause}")
+                        mOnUnsubscribeListener?.onUnsubscribeFailure(topic, defException)
+                    }
+                })
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            HermesLog.e(mTag, "解除订阅失败 : ${e.cause}")
+            mOnUnsubscribeListener?.onUnsubscribeFailure("all", e)
+        }
+    }
+
+    override fun getSubscribeTopic(): List<String> = mSubTopics ?: arrayListOf()
 
     override fun setTag(tag: String) {
         if (tag.isNotEmpty()) {

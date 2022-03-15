@@ -22,6 +22,8 @@ class WebSocketImpl : Hermes {
     private var mWsClient: WsClient? = null
     /** 订阅监听器 */
     private var mOnSubscribeListener: OnSubscribeListener? = null
+    /** 解除订阅监听器 */
+    private var mOnUnsubscribeListener: OnUnsubscribeListener? = null
     /** 连接监听器 */
     private var mOnConnectListener: OnConnectListener? = null
     /** 发送监听器 */
@@ -78,6 +80,10 @@ class WebSocketImpl : Hermes {
 
     override fun setOnSubscribeListener(listener: OnSubscribeListener?) {
         mOnSubscribeListener = listener
+    }
+
+    override fun setOnUnsubscribeListener(listener: OnUnsubscribeListener?) {
+        mOnUnsubscribeListener = listener
     }
 
     override fun setOnConnectListener(listener: OnConnectListener?) {
@@ -149,6 +155,10 @@ class WebSocketImpl : Hermes {
     override fun isConnected(): Boolean = mWsClient != null && mWsClient?.isOpen ?: false
 
     override fun subscribeTopic() {}
+
+    override fun unsubscribe(topics: List<String>?) {}
+
+    override fun getSubscribeTopic(): List<String>  = arrayListOf()
 
     override fun setTag(tag: String) {
         if (tag.isNotEmpty()){

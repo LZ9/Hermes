@@ -2,10 +2,7 @@ package com.lodz.android.hermes.modules
 
 import android.content.Context
 import androidx.annotation.IntDef
-import com.lodz.android.hermes.contract.Hermes
-import com.lodz.android.hermes.contract.OnConnectListener
-import com.lodz.android.hermes.contract.OnSendListener
-import com.lodz.android.hermes.contract.OnSubscribeListener
+import com.lodz.android.hermes.contract.*
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 
 /**
@@ -39,6 +36,8 @@ class HermesAgent private constructor() {
     private var mSubTopics: List<String>? = null
     /** 订阅回调 */
     private var mOnSubscribeListener: OnSubscribeListener? = null
+    /** 解除订阅回调 */
+    private var mOnUnsubscribeListener: OnUnsubscribeListener? = null
     /** 连接监听器 */
     private var mOnConnectListener: OnConnectListener? = null
     /** 发送监听器 */
@@ -93,6 +92,11 @@ class HermesAgent private constructor() {
         this.mOnSubscribeListener = listener
     }
 
+    /** 设置解除订阅监听器[listener] */
+    fun setOnUnsubscribeListener(listener: OnUnsubscribeListener): HermesAgent = this.apply {
+        this.mOnUnsubscribeListener = listener
+    }
+
     /** 设置连接监听器[listener] */
     fun setOnConnectListener(listener: OnConnectListener): HermesAgent = this.apply {
         this.mOnConnectListener = listener
@@ -133,6 +137,7 @@ class HermesAgent private constructor() {
         client.setOnSubscribeListener(mOnSubscribeListener)
         client.setOnConnectListener(mOnConnectListener)
         client.setOnSendListener(mOnSendListener)
+        client.setOnUnsubscribeListener(mOnUnsubscribeListener)
         client.setTag(mTag)
         return client
     }

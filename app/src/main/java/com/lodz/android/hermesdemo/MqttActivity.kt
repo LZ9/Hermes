@@ -11,10 +11,7 @@ import com.google.android.material.button.MaterialButton
 import com.lodz.android.corekt.anko.*
 import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.corekt.utils.StringUtils
-import com.lodz.android.hermes.contract.Hermes
-import com.lodz.android.hermes.contract.OnConnectListener
-import com.lodz.android.hermes.contract.OnSendListener
-import com.lodz.android.hermes.contract.OnSubscribeListener
+import com.lodz.android.hermes.contract.*
 import com.lodz.android.hermes.modules.HermesAgent
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.widget.base.TitleBarLayout
@@ -35,7 +32,7 @@ class MqttActivity : BaseActivity(){
     }
 
     /** 默认地址 */
-    private val DEFAULT_URL = "tcp://192.168.6.141:1883"
+    private val DEFAULT_URL = "tcp://172.16.1.160:1883"
     /** 默认客户端id */
     private val DEFAULT_CLIENT_ID = "12345"
     /** 默认订阅主题 */
@@ -44,6 +41,9 @@ class MqttActivity : BaseActivity(){
     private val DEFAULT_SEND_TOPIC = "test.client"
     /** 默认发送内容 */
     private val DEFAULT_SEND_CONTENT = "测试数据"
+    /** 默认新增订阅主题 */
+    private val DEFAULT_ADD_TOPIC = "test.topic,test.queue"
+
 
     /** 滚动控件 */
     private val mScrollView by bindView<NestedScrollView>(R.id.scroll_view)
@@ -76,6 +76,14 @@ class MqttActivity : BaseActivity(){
     /** 非静默按钮 */
     private val mUnslientBtn by bindView<MaterialButton>(R.id.unslient_btn)
 
+    /** 动态新增的主题输入框 */
+    private val mAddTopicEdit by bindView<EditText>(R.id.add_topic_edit)
+    /** 动态新增订阅主题 */
+    private val mAddTopicBtn by bindView<MaterialButton>(R.id.add_topic_btn)
+    /** 动态删除的主题输入框 */
+    private val mRemoveTopicEdit by bindView<EditText>(R.id.remove_topic_edit)
+    /** 动态删除订阅主题 */
+    private val mRemoveTopicBtn by bindView<MaterialButton>(R.id.remove_topic_btn)
 
     /** 日志 */
     private var mLog = ""
@@ -160,6 +168,30 @@ class MqttActivity : BaseActivity(){
         mUnslientBtn.setOnClickListener {
             mHermes?.setSilent(false)
         }
+
+        mAddTopicBtn.setOnClickListener {
+            if (mHermes == null || mHermes?.isConnected() == false) {
+                toastShort(R.string.mqtt_client_unconnected)
+                return@setOnClickListener
+            }
+            if (mAddTopicEdit.text.isEmpty()) {
+                toastShort(R.string.mqtt_add_topic_empty)
+                return@setOnClickListener
+            }
+            mHermes?.setSubTopic(StringUtils.getListBySeparator(mAddTopicEdit.text.toString(), ","))
+        }
+
+        mRemoveTopicBtn.setOnClickListener {
+            if (mHermes == null || mHermes?.isConnected() == false) {
+                toastShort(R.string.mqtt_client_unconnected)
+                return@setOnClickListener
+            }
+            if (mRemoveTopicEdit.text.isEmpty()) {
+                toastShort(R.string.mqtt_remove_topic_empty)
+                return@setOnClickListener
+            }
+            mHermes?.unsubscribe(StringUtils.getListBySeparator(mRemoveTopicEdit.text.toString(), ","))
+        }
     }
 
     override fun initData() {
@@ -178,6 +210,12 @@ class MqttActivity : BaseActivity(){
 
         mSendEdit.setText(DEFAULT_SEND_CONTENT)
         mSendEdit.setSelection(mSendEdit.length())
+
+        mAddTopicEdit.setText(DEFAULT_ADD_TOPIC)
+        mAddTopicEdit.setSelection(mAddTopicEdit.length())
+
+        mRemoveTopicEdit.setText(DEFAULT_SUB_TOPIC)
+        mRemoveTopicEdit.setSelection(mRemoveTopicEdit.length())
         showStatusCompleted()
     }
 
@@ -190,74 +228,68 @@ class MqttActivity : BaseActivity(){
             return
         }
         mHermes = HermesAgent.create()
-                .setConnectType(HermesAgent.MQTT)
-                .setUrl(url)
-                .setClientId(clientId)
-                .setPrintLog(true)
-                .setLogTag("HermesLog")
-                .setSubTopics(subTopic)
-                .setOnConnectListener(object : OnConnectListener {
-                    override fun onConnectComplete(isReconnected: Boolean) {
-                        logResult("连接完成 ： isReconnected ---> $isReconnected")
-                    }
+            .setConnectType(HermesAgent.MQTT)
+            .setUrl(url)
+            .setClientId(clientId)
+            .setPrintLog(true)
+            .setLogTag("HermesLog")
+            .setSubTopics(subTopic)
+            .setOnConnectListener(object : OnConnectListener {
+                override fun onConnectComplete(isReconnected: Boolean) {
+                    logResult("连接完成 ： isReconnected ---> $isReconnected")
+                }
 
-                    override fun onConnectFailure(cause: Throwable) {
-                        logResult("连接失败 : ${cause.message}")
-                    }
+                override fun onConnectFailure(cause: Throwable) {
+                    logResult("连接失败 : ${cause.message}")
+                }
 
-                    override fun onConnectionLost(cause: Throwable) {
-                        logResult("连接断开（丢失） : ${cause.message}")
-                    }
-                })
-                .setOnSendListener(object : OnSendListener {
-                    override fun onSendComplete(topic: String, content: String) {
-                        logResult("发送成功 : topic ---> $topic   $content")
-                    }
+                override fun onConnectionLost(cause: Throwable) {
+                    logResult("连接断开（丢失） : ${cause.message}")
+                }
+            })
+            .setOnSendListener(object : OnSendListener {
+                override fun onSendComplete(topic: String, content: String) {
+                    logResult("发送成功 : topic ---> $topic   $content")
+                }
 
-                    override fun onSendComplete(topic: String, data: ByteArray) {
-                        logResult("发送成功 : topic ---> $topic   $data")
-                    }
+                override fun onSendComplete(topic: String, data: ByteArray) {
+                    logResult("发送成功 : topic ---> $topic   $data")
+                }
 
-                    override fun onSendComplete(topic: String, bytes: ByteBuffer) {
-                        logResult("发送成功 : topic ---> $topic   $bytes")
-                    }
+                override fun onSendComplete(topic: String, bytes: ByteBuffer) {
+                    logResult("发送成功 : topic ---> $topic   $bytes")
+                }
 
-                    override fun onSendFailure(topic: String, cause: Throwable) {
-                        logResult("发送失败 : topic ---> $topic   ${cause.message}")
-                    }
-                })
-                .setOnSubscribeListener(object : OnSubscribeListener {
-                    override fun onSubscribeSuccess(topic: String) {
-                        logResult("订阅成功 : topic ---> $topic")
-                    }
+                override fun onSendFailure(topic: String, cause: Throwable) {
+                    logResult("发送失败 : topic ---> $topic   ${cause.message}")
+                }
+            })
+            .setOnSubscribeListener(object : OnSubscribeListener {
+                override fun onSubscribeSuccess(topic: String) {
+                    logResult("订阅成功 : topic ---> $topic")
+                    logResult("当前订阅列表 : ${mHermes?.getSubscribeTopic()}")
+                }
 
-                    override fun onSubscribeFailure(topic: String, cause: Throwable) {
-                        logResult("订阅失败 : topic ---> $topic   ${cause.message}")
-                    }
+                override fun onSubscribeFailure(topic: String, cause: Throwable) {
+                    logResult("订阅失败 : topic ---> $topic   ${cause.message}")
+                }
 
-                    override fun onMsgArrived(subTopic: String, msg: String) {
-                        logResult("消息到达($subTopic)： $msg")
-                    }
-                })
-                .buildConnect(applicationContext)
+                override fun onMsgArrived(subTopic: String, msg: String) {
+                    logResult("消息到达($subTopic)： $msg")
+                }
+            })
+            .setOnUnsubscribeListener(object : OnUnsubscribeListener {
+                override fun onUnsubscribeSuccess(topic: String) {
+                    logResult("解除订阅成功 : topic ---> $topic")
+                    logResult("剩余订阅列表 : ${mHermes?.getSubscribeTopic()}")
+                }
+
+                override fun onUnsubscribeFailure(topic: String, cause: Throwable) {
+                    logResult("解除订阅失败 : topic ---> $topic   ${cause.message}")
+                }
+            })
+            .buildConnect(applicationContext)
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /** 打印信息[result] */
     private fun logResult(result: String) {

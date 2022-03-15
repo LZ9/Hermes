@@ -125,7 +125,6 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/slient_btn"
-            style="?android:attr/borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
@@ -137,13 +136,64 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/unslient_btn"
-            style="?android:attr/borderlessButtonStyle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
             android:text="@string/mqtt_unslient"
+            android:textAllCaps="false"
+            android:textColor="@color/white" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:background="@color/color_d9d9d9" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:layout_marginBottom="5dp"
+        android:orientation="vertical">
+
+        <EditText
+            android:id="@+id/add_topic_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/mqtt_add_topic_hint"
+            android:inputType="text"
+            android:textSize="14sp"
+            tools:ignore="Autofill" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/add_topic_btn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp"
+            android:text="@string/mqtt_add_topic"
+            android:textAllCaps="false"
+            android:textColor="@color/white" />
+
+        <EditText
+            android:id="@+id/remove_topic_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/mqtt_remove_topic_hint"
+            android:inputType="text"
+            android:textSize="14sp"
+            tools:ignore="Autofill" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/remove_topic_btn"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="5dp"
+            android:text="@string/mqtt_remove_topic"
             android:textAllCaps="false"
             android:textColor="@color/white" />
 

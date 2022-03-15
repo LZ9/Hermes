@@ -20,6 +20,9 @@ interface Hermes {
     /** 设置订阅监听器，监听器[listener] */
     fun setOnSubscribeListener(listener: OnSubscribeListener?)
 
+    /** 设置解除订阅监听器，监听器[listener] */
+    fun setOnUnsubscribeListener(listener: OnUnsubscribeListener?)
+
     /** 设置连接监听器，监听器[listener] */
     fun setOnConnectListener(listener: OnConnectListener?)
 
@@ -46,6 +49,12 @@ interface Hermes {
 
     /** 订阅主题 */
     fun subscribeTopic()
+
+    /** 取消订阅主题列表[topics] */
+    fun unsubscribe(topics: List<String>?)
+
+    /** 获取已经订阅的主题 */
+    fun getSubscribeTopic(): List<String>
 
     /** 设置日志标签[tag] */
     fun setTag(tag: String)

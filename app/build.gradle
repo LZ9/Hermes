@@ -35,7 +35,7 @@ android {
 
 dependencies {
     // 组件库
-    implementation 'ink.lodz:pandora:1.8.6'
+    implementation 'ink.lodz:pandora:1.8.7'
     // 推送组件
     implementation project(':hermes')
 }

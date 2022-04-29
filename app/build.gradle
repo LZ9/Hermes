@@ -4,7 +4,6 @@ apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 32
-    buildToolsVersion "32.0.0"
 
     defaultConfig {
         applicationId "com.lodz.android.hermesdemo"

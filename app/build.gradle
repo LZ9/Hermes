@@ -25,11 +25,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    // 程序在编译的时候会检查lint，有任何错误提示会停止build，我们可以关闭这个开关
-    lintOptions {
+    lint {
         abortOnError false
         checkReleaseBuilds false
     }
+    namespace 'com.lodz.android.hermesdemo'
+    // 程序在编译的时候会检查lint，有任何错误提示会停止build，我们可以关闭这个开关
 }
 
 dependencies {

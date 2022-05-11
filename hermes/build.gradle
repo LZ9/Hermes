@@ -18,10 +18,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    lintOptions {
+    lint {
         abortOnError false
         checkReleaseBuilds false
     }
+    namespace 'com.lodz.android.hermes'
 }
 
 dependencies {

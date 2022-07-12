@@ -10,7 +10,6 @@ import androidx.core.widget.NestedScrollView
 import com.google.android.material.button.MaterialButton
 import com.lodz.android.corekt.anko.*
 import com.lodz.android.corekt.utils.DateUtils
-import com.lodz.android.corekt.utils.StringUtils
 import com.lodz.android.hermes.contract.*
 import com.lodz.android.hermes.modules.HermesAgent
 import com.lodz.android.pandora.base.activity.BaseActivity
@@ -126,7 +125,7 @@ class MqttActivity : BaseActivity(){
             }
             var list: List<String> = ArrayList()
             if (mSubtopicEdit.text.isNotEmpty()) {
-                list = StringUtils.getListBySeparator(mSubtopicEdit.text.toString(), ",")
+                list = mSubtopicEdit.text.toString().getListBySeparator(",")
             }
             connect(mUrlEdit.text.toString(), mClientIdEdit.text.toString(), list)
         }
@@ -178,7 +177,7 @@ class MqttActivity : BaseActivity(){
                 toastShort(R.string.mqtt_add_topic_empty)
                 return@setOnClickListener
             }
-            mHermes?.setSubTopic(StringUtils.getListBySeparator(mAddTopicEdit.text.toString(), ","))
+            mHermes?.setSubTopic(mAddTopicEdit.text.toString().getListBySeparator(","))
         }
 
         mRemoveTopicBtn.setOnClickListener {
@@ -190,7 +189,7 @@ class MqttActivity : BaseActivity(){
                 toastShort(R.string.mqtt_remove_topic_empty)
                 return@setOnClickListener
             }
-            mHermes?.unsubscribe(StringUtils.getListBySeparator(mRemoveTopicEdit.text.toString(), ","))
+            mHermes?.unsubscribe(mRemoveTopicEdit.text.toString().getListBySeparator(","))
         }
     }
 

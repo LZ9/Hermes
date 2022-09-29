@@ -179,7 +179,7 @@ Hermes的使用非常简单，仅需3步：
 ## License
 - [Apache Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.html)
 
-Copyright 2018 Lodz
+Copyright 2022 Lodz
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

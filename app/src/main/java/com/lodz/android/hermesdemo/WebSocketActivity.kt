@@ -34,7 +34,7 @@ class WebSocketActivity : BaseActivity() {
         }
     }
 
-    private val DEFAULT_URL = "ws://192.168.7.39:9090/yszz/jms/1"
+    private val DEFAULT_URL = "ws://121.40.165.18:8800"
 
     /** 地址输入框 */
     private val mUrlEdit by bindView<EditText>(R.id.url_edit)

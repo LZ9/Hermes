@@ -31,7 +31,7 @@ class MqttActivity : BaseActivity(){
     }
 
     /** 默认地址 */
-    private val DEFAULT_URL = "tcp://172.16.1.160:1883"
+    private val DEFAULT_URL = "tcp://192.168.1.49:1883"
     /** 默认客户端id */
     private val DEFAULT_CLIENT_ID = "12345"
     /** 默认订阅主题 */

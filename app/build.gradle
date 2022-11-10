@@ -3,12 +3,12 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
 
     defaultConfig {
         applicationId "com.lodz.android.hermesdemo"
         minSdkVersion 21
-        targetSdkVersion 32
+        targetSdkVersion 33
         versionCode 1
         versionName "1.0"
         multiDexEnabled = true// 启用dex分包
@@ -35,7 +35,7 @@ android {
 
 dependencies {
     // 组件库
-    implementation 'ink.lodz:pandora:2.0.0'
+    implementation 'ink.lodz:pandora:2.0.3'
     // 推送组件
     implementation project(':hermes')
 }

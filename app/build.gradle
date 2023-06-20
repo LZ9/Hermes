@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 
 android {
-    compileSdkVersion 33
+    compileSdkVersion 34
 
     defaultConfig {
         applicationId "com.lodz.android.hermesdemo"
@@ -39,7 +39,7 @@ android {
 
 dependencies {
     // 组件库
-    implementation 'ink.lodz:pandora:2.0.3'
+    implementation 'ink.lodz:pandora:2.0.4'
     // 推送组件
     implementation project(':hermes')
 }

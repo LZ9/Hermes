@@ -1,6 +1,7 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-kapt'
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+}
 
 android {
     compileSdkVersion 34
@@ -14,6 +15,10 @@ android {
         multiDexEnabled = true// 启用dex分包
     }
 
+    viewBinding {
+        enabled = true
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -24,17 +29,41 @@ android {
     }
 
     buildTypes {
+        debug {//debug版本的配置
+            minifyEnabled false // 是否进行混淆
+            zipAlignEnabled false // 是否支持zip
+            debuggable true // 是否支持调试
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
         release {
-            minifyEnabled false
+            minifyEnabled false // 是否进行混淆
+            zipAlignEnabled true // 是否支持zip
+            debuggable false // 是否支持调试
+            jniDebuggable false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
     lint {
         abortOnError false
         checkReleaseBuilds false
     }
+
     namespace 'com.lodz.android.hermesdemo'
-    // 程序在编译的时候会检查lint，有任何错误提示会停止build，我们可以关闭这个开关
+
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def newName
+            if (variant.baseName.endsWith('release')) {
+                def formattedDate = new Date().format('yyyyMMddHHmm')
+                newName = "Hermes-v" + defaultConfig.versionName + "-" + variant.baseName + "-" + formattedDate + ".apk"
+            } else {
+                newName = "Hermes-v" + defaultConfig.versionName + "-" + variant.baseName + ".apk"
+            }
+            outputFileName = newName
+        }
+    }
 }
 
 dependencies {

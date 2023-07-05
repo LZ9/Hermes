@@ -55,9 +55,9 @@ class WebSocketActivity : BaseActivity() {
     private val mDisconnectBtn by bindView<MaterialButton>(R.id.disconnect_btn)
 
     /** 静默按钮 */
-    private val mSlientBtn by bindView<MaterialButton>(R.id.slient_btn)
+    private val mSlientBtn by bindView<MaterialButton>(R.id.silent_btn)
     /** 非静默按钮 */
-    private val mUnslientBtn by bindView<MaterialButton>(R.id.unslient_btn)
+    private val mUnslientBtn by bindView<MaterialButton>(R.id.unsilent_btn)
 
     /** 日志 */
     private var mLog = ""
@@ -76,7 +76,6 @@ class WebSocketActivity : BaseActivity() {
         titleBarLayout.setTitleName(R.string.ws_title)
         titleBarLayout.setBackgroundColor(getColorCompat(R.color.colorPrimary))
         titleBarLayout.setTitleTextColor(R.color.white)
-        titleBarLayout.needBackButton(false)
     }
 
     override fun onPressBack(): Boolean {

@@ -83,26 +83,26 @@
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/slient_btn"
+            android:id="@+id/silent_btn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
             android:backgroundTint="@color/colorPrimary"
-            android:text="@string/mqtt_slient"
+            android:text="@string/mqtt_silent"
             android:textAllCaps="false"
             android:textColor="@color/white" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/unslient_btn"
+            android:id="@+id/unsilent_btn"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_marginEnd="5dp"
             android:layout_weight="1"
             android:backgroundTint="@color/colorPrimary"
-            android:text="@string/mqtt_unslient"
+            android:text="@string/mqtt_unsilent"
             android:textAllCaps="false"
             android:textColor="@color/white" />
 

@@ -31,7 +31,7 @@ class MqttActivity : BaseActivity(){
     }
 
     /** 默认地址 */
-    private val DEFAULT_URL = "tcp://192.168.1.49:1883"
+    private val DEFAULT_URL = "tcp://192.168.1.60:1883"
     /** 默认客户端id */
     private val DEFAULT_CLIENT_ID = "12345"
     /** 默认订阅主题 */
@@ -47,7 +47,7 @@ class MqttActivity : BaseActivity(){
     /** 滚动控件 */
     private val mScrollView by bindView<NestedScrollView>(R.id.scroll_view)
     /** 日志 */
-    private val mResultTv by bindView<TextView>(R.id.result)
+    private val mResultTv by bindView<TextView>(R.id.result_tv)
 
     /** 地址输入框 */
     private val mUrlEdit by bindView<EditText>(R.id.url_edit)
@@ -66,14 +66,14 @@ class MqttActivity : BaseActivity(){
     private val mSendBtn by bindView<Button>(R.id.send_btn)
 
     /** 清空按钮 */
-    private val mCleanBtn by bindView<Button>(R.id.clean_btn)
+    private val mCleanBtn by bindView<MaterialButton>(R.id.clean_btn)
     /** 断开按钮 */
-    private val mDisconnectBtn by bindView<Button>(R.id.disconnect_btn)
+    private val mDisconnectBtn by bindView<MaterialButton>(R.id.disconnect_btn)
 
     /** 静默按钮 */
-    private val mSlientBtn by bindView<MaterialButton>(R.id.slient_btn)
+    private val mSlientBtn by bindView<MaterialButton>(R.id.silent_btn)
     /** 非静默按钮 */
-    private val mUnslientBtn by bindView<MaterialButton>(R.id.unslient_btn)
+    private val mUnslientBtn by bindView<MaterialButton>(R.id.unsilent_btn)
 
     /** 动态新增的主题输入框 */
     private val mAddTopicEdit by bindView<EditText>(R.id.add_topic_edit)
@@ -100,15 +100,24 @@ class MqttActivity : BaseActivity(){
         titleBarLayout.setTitleName(R.string.mqtt_title)
         titleBarLayout.setBackgroundColor(getColorCompat(R.color.colorAccent))
         titleBarLayout.setTitleTextColor(R.color.white)
-        titleBarLayout.needBackButton(false)
+    }
+
+    override fun onClickBackBtn() {
+        super.onClickBackBtn()
+        releaseHermes()
+        finish()
     }
 
     override fun onPressBack(): Boolean {
+        releaseHermes()
+        return false
+    }
+
+    private fun releaseHermes(){
         if (mHermes?.isConnected() == true){
             mHermes?.disconnect()
         }
         mHermes = null
-        return super.onPressBack()
     }
 
     override fun setListeners() {

@@ -8,7 +8,7 @@ android {
     defaultConfig {
         applicationId "com.lodz.android.hermesdemo"
         minSdkVersion 21
-        targetSdkVersion 33
+        targetSdkVersion 34
         versionCode 1
         versionName "1.0"
         multiDexEnabled = true// 启用dex分包
@@ -39,7 +39,7 @@ android {
 
 dependencies {
     // 组件库
-    implementation 'ink.lodz:pandora:2.0.4'
+    implementation 'ink.lodz:pandora:2.0.5'
     // 推送组件
     implementation project(':hermes')
 }

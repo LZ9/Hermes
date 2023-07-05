@@ -3,17 +3,16 @@ package com.lodz.android.hermesdemo
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.EditText
-import android.widget.TextView
-import com.google.android.material.button.MaterialButton
+import android.view.View
 import com.lodz.android.corekt.anko.append
-import com.lodz.android.corekt.anko.bindView
 import com.lodz.android.corekt.anko.getColorCompat
 import com.lodz.android.corekt.anko.toastShort
 import com.lodz.android.corekt.utils.StatusBarUtil
 import com.lodz.android.hermes.contract.OnWebSocketServerListener
 import com.lodz.android.hermes.modules.BaseWebSocketServer
+import com.lodz.android.hermesdemo.databinding.ActivityWsServerBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
+import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
@@ -27,52 +26,47 @@ import java.nio.ByteBuffer
 class WebsocketServerActivity : BaseActivity() {
 
     companion object {
+        /** 默认端口号 */
+        private const val DEFAULT_PORT = 8800
         fun start(context: Context){
-            val intent = Intent(context, WebsocketServerActivity::class.java)
-            context.startActivity(intent)
+            context.startActivity(Intent(context, WebsocketServerActivity::class.java))
         }
     }
 
-    /** 默认端口号 */
-    private val DEFAULT_PORT = 8800
+    private val mBinding: ActivityWsServerBinding by bindingLayout(ActivityWsServerBinding::inflate)
 
-    /** 端口输入框 */
-    private val mPortEdit by bindView<EditText>(R.id.port_edit)
-    /** 启动服务 */
-    private val mOpenBtn by bindView<MaterialButton>(R.id.open_btn)
-    /** 关闭服务 */
-    private val mCloseBtn by bindView<MaterialButton>(R.id.close_btn)
-    /** 发送内容输入框 */
-    private val mContentEdit by bindView<EditText>(R.id.content_edit)
-    /** 发送按钮 */
-    private val mSendBtn by bindView<MaterialButton>(R.id.send_btn)
-    /** 日志 */
-    private val mLogTv by bindView<TextView>(R.id.log_tv)
-    /** 清空日志按钮 */
-    private val mCleanBtn by bindView<MaterialButton>(R.id.clean_btn)
+    override fun getViewBindingLayout(): View = mBinding.root
 
     private var mWebSocketServer: BaseWebSocketServer? = null
-
-    override fun getLayoutId(): Int = R.layout.activity_ws_server
 
     override fun findViews(savedInstanceState: Bundle?) {
         super.findViews(savedInstanceState)
         initTitleBarLayout(getTitleBarLayout())
         StatusBarUtil.setColor(window, getColorCompat(R.color.color_ff6307))
-        mPortEdit.setText(DEFAULT_PORT.toString())
+        mBinding.portEdit.setText(DEFAULT_PORT.toString())
     }
 
     private fun initTitleBarLayout(titleBarLayout: TitleBarLayout) {
         titleBarLayout.setTitleName(R.string.ws_server_title)
         titleBarLayout.setBackgroundColor(getColorCompat(R.color.color_ff6307))
         titleBarLayout.setTitleTextColor(R.color.white)
-        titleBarLayout.needBackButton(false)
+    }
+
+    override fun onPressBack(): Boolean {
+        closeWebSocketServer()
+        return false
+    }
+
+    override fun onClickBackBtn() {
+        super.onClickBackBtn()
+        closeWebSocketServer()
+        finish()
     }
 
     override fun setListeners() {
         super.setListeners()
-        mOpenBtn.setOnClickListener {
-            val port = mPortEdit.text.toString()
+        mBinding.openBtn.setOnClickListener {
+            val port = mBinding.portEdit.text.toString()
             if (port.isEmpty()){
                 toastShort(R.string.ws_server_port_hint)
                 return@setOnClickListener
@@ -80,16 +74,16 @@ class WebsocketServerActivity : BaseActivity() {
             openWebSocketServer(port.toInt())
         }
 
-        mCloseBtn.setOnClickListener {
+        mBinding.closeBtn.setOnClickListener {
             closeWebSocketServer()
         }
 
-        mSendBtn.setOnClickListener {
+        mBinding.sendBtn.setOnClickListener {
             if (mWebSocketServer == null){
                 toastShort(R.string.ws_server_unopen)
                 return@setOnClickListener
             }
-            val msg = mContentEdit.text.toString()
+            val msg = mBinding.contentEdit.text.toString()
             if (msg.isEmpty()){
                 toastShort(R.string.ws_server_send_hint)
                 return@setOnClickListener
@@ -97,8 +91,8 @@ class WebsocketServerActivity : BaseActivity() {
             sendMsg(msg)
         }
 
-        mCleanBtn.setOnClickListener {
-            mLogTv.text = ""
+        mBinding.cleanBtn.setOnClickListener {
+            mBinding.logTv.text = ""
         }
     }
 
@@ -181,10 +175,10 @@ class WebsocketServerActivity : BaseActivity() {
     }
 
     private fun addLog(log: String) {
-        val text = mLogTv.text.toString()
+        val text = mBinding.logTv.text.toString()
         if (text.isEmpty()) {
-            mLogTv.text = log
+            mBinding.logTv.text = log
         }
-        mLogTv.text = log.append("\n").append(text)
+        mBinding.logTv.text = log.append("\n").append(text)
     }
 }

@@ -2,6 +2,7 @@
     <string name="app_name">Hermes</string>
 
     <string name="mqtt_title">Hermes订阅</string>
+    <string name="mqtt_create">创建</string>
     <string name="mqtt_connect">连接</string>
     <string name="mqtt_connect_info_title">连接信息</string>
     <string name="mqtt_url_hint">请输入ip和端口号</string>

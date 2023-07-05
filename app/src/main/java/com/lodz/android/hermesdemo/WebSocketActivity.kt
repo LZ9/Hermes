@@ -3,11 +3,7 @@ package com.lodz.android.hermesdemo
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import androidx.core.widget.NestedScrollView
-import com.google.android.material.button.MaterialButton
+import android.view.View
 import com.lodz.android.corekt.anko.*
 import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.corekt.utils.StatusBarUtil
@@ -16,7 +12,9 @@ import com.lodz.android.hermes.contract.OnConnectListener
 import com.lodz.android.hermes.contract.OnSendListener
 import com.lodz.android.hermes.contract.OnSubscribeListener
 import com.lodz.android.hermes.modules.HermesAgent
+import com.lodz.android.hermesdemo.databinding.ActivityWsBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
+import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout
 import java.nio.ByteBuffer
 
@@ -28,43 +26,22 @@ import java.nio.ByteBuffer
 class WebSocketActivity : BaseActivity() {
 
     companion object {
+
+        private const val DEFAULT_URL = "ws://121.40.165.18:8800"
+
         fun start(context: Context){
-            val intent = Intent(context, WebSocketActivity::class.java)
-            context.startActivity(intent)
+            context.startActivity(Intent(context, WebSocketActivity::class.java))
         }
     }
 
-    private val DEFAULT_URL = "ws://121.40.165.18:8800"
+    private val mBinding: ActivityWsBinding by bindingLayout(ActivityWsBinding::inflate)
 
-    /** 地址输入框 */
-    private val mUrlEdit by bindView<EditText>(R.id.url_edit)
-    /** 连接按钮 */
-    private val mConnectBtn by bindView<MaterialButton>(R.id.connect_btn)
-    /** 发送内容输入框 */
-    private val mSendEdit by bindView<EditText>(R.id.send_edit)
-    /** 发送按钮 */
-    private val mSendBtn by bindView<MaterialButton>(R.id.send_btn)
-
-    /** 滚动控件 */
-    private val mScrollView by bindView<NestedScrollView>(R.id.scroll_view)
-    /** 日志 */
-    private val mResultTv by bindView<TextView>(R.id.result_tv)
-    /** 清空按钮 */
-    private val mCleanBtn by bindView<MaterialButton>(R.id.clean_btn)
-    /** 断开按钮 */
-    private val mDisconnectBtn by bindView<MaterialButton>(R.id.disconnect_btn)
-
-    /** 静默按钮 */
-    private val mSlientBtn by bindView<MaterialButton>(R.id.silent_btn)
-    /** 非静默按钮 */
-    private val mUnslientBtn by bindView<MaterialButton>(R.id.unsilent_btn)
+    override fun getViewBindingLayout(): View = mBinding.root
 
     /** 日志 */
     private var mLog = ""
     /** 推送客户端 */
     private var mHermes: Hermes? = null
-
-    override fun getLayoutId(): Int = R.layout.activity_ws
 
     override fun findViews(savedInstanceState: Bundle?) {
         super.findViews(savedInstanceState)
@@ -78,28 +55,35 @@ class WebSocketActivity : BaseActivity() {
         titleBarLayout.setTitleTextColor(R.color.white)
     }
 
+    override fun onClickBackBtn() {
+        super.onClickBackBtn()
+        releaseHermes()
+        finish()
+    }
+
     override fun onPressBack(): Boolean {
+        releaseHermes()
+        return false
+    }
+
+    private fun releaseHermes(){
         if (mHermes?.isConnected() == true){
             mHermes?.disconnect()
         }
         mHermes = null
-        return super.onPressBack()
     }
 
     override fun setListeners() {
         super.setListeners()
         // 连接按钮
-        mConnectBtn.setOnClickListener {
-            val url = mUrlEdit.text.toString()
+        mBinding.createBtn.setOnClickListener {
+            val url = mBinding.urlEdit.text.toString()
             if (url.isEmpty()){
                 toastShort(R.string.mqtt_url_hint)
                 return@setOnClickListener
             }
             if (mHermes != null){
-                if (mHermes?.isConnected() == false){
-                    mHermes?.connect()
-                }
-                return@setOnClickListener
+                releaseHermes()
             }
             mHermes = HermesAgent.create()
                     .setConnectType(HermesAgent.WEB_SOCKET)
@@ -152,8 +136,8 @@ class WebSocketActivity : BaseActivity() {
         }
 
         // 发送按钮
-        mSendBtn.setOnClickListener {
-            val content = mSendEdit.text.toString()
+        mBinding.sendBtn.setOnClickListener {
+            val content = mBinding.sendEdit.text.toString()
             if (content.isEmpty()){
                 toastShort(R.string.mqtt_send_content_empty)
                 return@setOnClickListener
@@ -162,41 +146,46 @@ class WebSocketActivity : BaseActivity() {
                 toastShort(R.string.mqtt_client_unconnected)
                 return@setOnClickListener
             }
-            mHermes?.sendTopic("", mSendEdit.text.toString())
+            mHermes?.sendTopic("", mBinding.sendEdit.text.toString())
         }
 
         // 清空按钮
-        mCleanBtn.setOnClickListener {
+        mBinding.cleanBtn.setOnClickListener {
             mLog = ""
-            mResultTv.text = ""
+            mBinding.resultTv.text = ""
         }
 
         // 断开按钮
-        mDisconnectBtn.setOnClickListener {
+        mBinding.connectBtn.setOnClickListener {
+            mHermes?.connect()
+        }
+
+        // 断开按钮
+        mBinding.disconnectBtn.setOnClickListener {
             mHermes?.disconnect()
         }
 
-        mSlientBtn.setOnClickListener {
+        mBinding.silentBtn.setOnClickListener {
             mHermes?.setSilent(true)
         }
 
-        mUnslientBtn.setOnClickListener {
+        mBinding.unsilentBtn.setOnClickListener {
             mHermes?.setSilent(false)
         }
     }
 
     override fun initData() {
         super.initData()
-        mUrlEdit.setText(DEFAULT_URL)
+        mBinding.urlEdit.setText(DEFAULT_URL)
         showStatusCompleted()
     }
 
     /** 打印信息[result] */
     private fun logResult(result: String) {
         mLog += DateUtils.getCurrentFormatString(DateUtils.TYPE_8).append(" : ").append(result).append("\n")
-        mResultTv.text = mLog
-        mScrollView.post {
-            mScrollView.smoothScrollTo(getScreenWidth(), getScreenHeight())
+        mBinding.resultTv.text = mLog
+        mBinding.scrollView.post {
+            mBinding.scrollView.smoothScrollTo(getScreenWidth(), getScreenHeight())
         }
     }
 }

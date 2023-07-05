@@ -1,22 +1,18 @@
 package com.lodz.android.hermesdemo
 
 import android.os.Bundle
-import com.google.android.material.button.MaterialButton
-import com.lodz.android.corekt.anko.bindView
+import android.view.View
 import com.lodz.android.corekt.anko.getColorCompat
+import com.lodz.android.hermesdemo.databinding.ActivityMainBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
+import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout
 
 class MainActivity : BaseActivity(){
 
-    /** MQTT */
-    private val mMqttBtn by bindView<MaterialButton>(R.id.mqtt_btn)
-    /** Websocket客户端 */
-    private val mWebsocketBtn by bindView<MaterialButton>(R.id.websocket_btn)
-    /** Websocket服务端 */
-    private val mWebsocketServerBtn by bindView<MaterialButton>(R.id.ws_server_btn)
+    private val mBinding: ActivityMainBinding by bindingLayout(ActivityMainBinding::inflate)
 
-    override fun getLayoutId(): Int = R.layout.activity_main
+    override fun getViewBindingLayout(): View = mBinding.root
 
     override fun findViews(savedInstanceState: Bundle?) {
         super.findViews(savedInstanceState)
@@ -32,16 +28,16 @@ class MainActivity : BaseActivity(){
 
     override fun setListeners() {
         super.setListeners()
-        mMqttBtn.setOnClickListener {
-            MqttActivity.start(getContext())
+        mBinding.mqttBtn.setOnClickListener {
+            MqttActivity.start(getContext())//MQTT
         }
 
-        mWebsocketBtn.setOnClickListener {
-            WebSocketActivity.start(getContext())
+        mBinding.websocketBtn.setOnClickListener {
+            WebSocketActivity.start(getContext())//Websocket客户端
         }
 
-        mWebsocketServerBtn.setOnClickListener {
-            WebsocketServerActivity.start(getContext())
+        mBinding.wsServerBtn.setOnClickListener {
+            WebsocketServerActivity.start(getContext())//Websocket服务端
         }
     }
 

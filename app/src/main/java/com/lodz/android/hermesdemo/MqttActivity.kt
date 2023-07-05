@@ -3,16 +3,14 @@ package com.lodz.android.hermesdemo
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
-import androidx.core.widget.NestedScrollView
-import com.google.android.material.button.MaterialButton
+import android.view.View
 import com.lodz.android.corekt.anko.*
 import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.hermes.contract.*
 import com.lodz.android.hermes.modules.HermesAgent
+import com.lodz.android.hermesdemo.databinding.ActivityMqttBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
+import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout
 import java.nio.ByteBuffer
 
@@ -24,72 +22,38 @@ import java.nio.ByteBuffer
 class MqttActivity : BaseActivity(){
 
     companion object {
-        fun start(context: Context){
-            val intent = Intent(context, MqttActivity::class.java)
-            context.startActivity(intent)
+
+        /** 默认地址 */
+        private const val DEFAULT_URL = "tcp://192.168.1.60:1883"
+
+        /** 默认客户端id */
+        private const val DEFAULT_CLIENT_ID = "12345"
+
+        /** 默认订阅主题 */
+        private const val DEFAULT_SUB_TOPIC = "test.topic"
+
+        /** 默认发送主题 */
+        private const val DEFAULT_SEND_TOPIC = "test.client"
+
+        /** 默认发送内容 */
+        private const val DEFAULT_SEND_CONTENT = "测试数据"
+
+        /** 默认新增订阅主题 */
+        private const val DEFAULT_ADD_TOPIC = "test.topic,test.queue"
+
+        fun start(context: Context) {
+            context.startActivity(Intent(context, MqttActivity::class.java))
         }
     }
 
-    /** 默认地址 */
-    private val DEFAULT_URL = "tcp://192.168.1.60:1883"
-    /** 默认客户端id */
-    private val DEFAULT_CLIENT_ID = "12345"
-    /** 默认订阅主题 */
-    private val DEFAULT_SUB_TOPIC = "test.topic"
-    /** 默认发送主题 */
-    private val DEFAULT_SEND_TOPIC = "test.client"
-    /** 默认发送内容 */
-    private val DEFAULT_SEND_CONTENT = "测试数据"
-    /** 默认新增订阅主题 */
-    private val DEFAULT_ADD_TOPIC = "test.topic,test.queue"
+    private val mBinding: ActivityMqttBinding by bindingLayout(ActivityMqttBinding::inflate)
 
-
-    /** 滚动控件 */
-    private val mScrollView by bindView<NestedScrollView>(R.id.scroll_view)
-    /** 日志 */
-    private val mResultTv by bindView<TextView>(R.id.result_tv)
-
-    /** 地址输入框 */
-    private val mUrlEdit by bindView<EditText>(R.id.url_edit)
-    /** ClientId输入框 */
-    private val mClientIdEdit by bindView<EditText>(R.id.client_id_edit)
-    /** 订阅主题输入框 */
-    private val mSubtopicEdit by bindView<EditText>(R.id.subtopic_edit)
-    /** 连接按钮 */
-    private val mConnectBtn by bindView<Button>(R.id.connect_btn)
-
-    /** 发送主题输入框 */
-    private val mSendTpoicEdit by bindView<EditText>(R.id.send_topic_edit)
-    /** 发送内容输入框 */
-    private val mSendEdit by bindView<EditText>(R.id.send_edit)
-    /** 发送按钮 */
-    private val mSendBtn by bindView<Button>(R.id.send_btn)
-
-    /** 清空按钮 */
-    private val mCleanBtn by bindView<MaterialButton>(R.id.clean_btn)
-    /** 断开按钮 */
-    private val mDisconnectBtn by bindView<MaterialButton>(R.id.disconnect_btn)
-
-    /** 静默按钮 */
-    private val mSlientBtn by bindView<MaterialButton>(R.id.silent_btn)
-    /** 非静默按钮 */
-    private val mUnslientBtn by bindView<MaterialButton>(R.id.unsilent_btn)
-
-    /** 动态新增的主题输入框 */
-    private val mAddTopicEdit by bindView<EditText>(R.id.add_topic_edit)
-    /** 动态新增订阅主题 */
-    private val mAddTopicBtn by bindView<MaterialButton>(R.id.add_topic_btn)
-    /** 动态删除的主题输入框 */
-    private val mRemoveTopicEdit by bindView<EditText>(R.id.remove_topic_edit)
-    /** 动态删除订阅主题 */
-    private val mRemoveTopicBtn by bindView<MaterialButton>(R.id.remove_topic_btn)
+    override fun getViewBindingLayout(): View = mBinding.root
 
     /** 日志 */
     private var mLog = ""
     /** 推送客户端 */
     private var mHermes: Hermes? = null
-
-    override fun getLayoutId(): Int = R.layout.activity_mqtt
 
     override fun findViews(savedInstanceState: Bundle?) {
         super.findViews(savedInstanceState)
@@ -122,119 +86,124 @@ class MqttActivity : BaseActivity(){
 
     override fun setListeners() {
         super.setListeners()
-        // 连接
-        mConnectBtn.setOnClickListener {
-            if (mUrlEdit.text.isEmpty()) {
+        // 创建
+        mBinding.createBtn.setOnClickListener {
+            if (mBinding.urlEdit.text.isEmpty()) {
                 toastShort(R.string.mqtt_url_empty)
                 return@setOnClickListener
             }
-            if (mClientIdEdit.text.isEmpty()) {
+            if (mBinding.clientIdEdit.text.isEmpty()) {
                 toastShort(R.string.mqtt_client_id_empty)
                 return@setOnClickListener
             }
             var list: List<String> = ArrayList()
-            if (mSubtopicEdit.text.isNotEmpty()) {
-                list = mSubtopicEdit.text.toString().getListBySeparator(",")
+            if (mBinding.subtopicEdit.text.isNotEmpty()) {
+                list = mBinding.subtopicEdit.text.toString().getListBySeparator(",")
             }
-            connect(mUrlEdit.text.toString(), mClientIdEdit.text.toString(), list)
+            create(mBinding.urlEdit.text.toString(), mBinding.clientIdEdit.text.toString(), list)
         }
 
         // 发送
-        mSendBtn.setOnClickListener {
+        mBinding.sendBtn.setOnClickListener {
             if (mHermes == null || mHermes?.isConnected() == false) {
                 toastShort(R.string.mqtt_client_unconnected)
                 return@setOnClickListener
             }
-            if (mSendTpoicEdit.text.isEmpty()) {
+            if (mBinding.sendTopicEdit.text.isEmpty()) {
                 toastShort(R.string.mqtt_send_topic_empty)
                 return@setOnClickListener
             }
-            if (mSendEdit.text.isEmpty()) {
+            if (mBinding.sendEdit.text.isEmpty()) {
                 toastShort(R.string.mqtt_send_content_empty)
                 return@setOnClickListener
             }
-            mHermes?.sendTopic(mSendTpoicEdit.text.toString(), mSendEdit.text.toString())
+            mHermes?.sendTopic(mBinding.sendTopicEdit.text.toString(), mBinding.sendEdit.text.toString())
         }
 
-        // 清空按钮
-        mCleanBtn.setOnClickListener {
+        // 清空日志按钮
+        mBinding.cleanBtn.setOnClickListener {
             mLog = ""
-            mResultTv.text = ""
+            mBinding.resultTv.text = ""
+        }
+
+        // 连接按钮
+        mBinding.connectBtn.setOnClickListener {
+            mHermes?.connect()
         }
 
         // 断开按钮
-        mDisconnectBtn.setOnClickListener {
+        mBinding.disconnectBtn.setOnClickListener {
             mHermes?.disconnect()
         }
 
         // 设置静默
-        mSlientBtn.setOnClickListener {
+        mBinding.silentBtn.setOnClickListener {
             mHermes?.setSilent(true)
         }
 
         // 设置非静默
-        mUnslientBtn.setOnClickListener {
+        mBinding.unsilentBtn.setOnClickListener {
             mHermes?.setSilent(false)
         }
 
-        mAddTopicBtn.setOnClickListener {
+        // 动态添加订阅主题
+        mBinding.addTopicBtn.setOnClickListener {
             if (mHermes == null || mHermes?.isConnected() == false) {
                 toastShort(R.string.mqtt_client_unconnected)
                 return@setOnClickListener
             }
-            if (mAddTopicEdit.text.isEmpty()) {
+            if (mBinding.addTopicEdit.text.isEmpty()) {
                 toastShort(R.string.mqtt_add_topic_empty)
                 return@setOnClickListener
             }
-            mHermes?.setSubTopic(mAddTopicEdit.text.toString().getListBySeparator(","))
+            mHermes?.setSubTopic(mBinding.addTopicEdit.text.toString().getListBySeparator(","))
         }
 
-        mRemoveTopicBtn.setOnClickListener {
+        // 动态删除订阅主题
+        mBinding.removeTopicBtn.setOnClickListener {
             if (mHermes == null || mHermes?.isConnected() == false) {
                 toastShort(R.string.mqtt_client_unconnected)
                 return@setOnClickListener
             }
-            if (mRemoveTopicEdit.text.isEmpty()) {
+            if (mBinding.removeTopicEdit.text.isEmpty()) {
                 toastShort(R.string.mqtt_remove_topic_empty)
                 return@setOnClickListener
             }
-            mHermes?.unsubscribe(mRemoveTopicEdit.text.toString().getListBySeparator(","))
+            mHermes?.unsubscribe(mBinding.removeTopicEdit.text.toString().getListBySeparator(","))
         }
     }
 
     override fun initData() {
         super.initData()
-        mUrlEdit.setText(DEFAULT_URL)
-        mUrlEdit.setSelection(mUrlEdit.length())
+        mBinding.urlEdit.setText(DEFAULT_URL)
+        mBinding.urlEdit.setSelection(mBinding.urlEdit.length())
 
-        mClientIdEdit.setText(DEFAULT_CLIENT_ID)
-        mClientIdEdit.setSelection(mClientIdEdit.length())
+        mBinding.clientIdEdit.setText(DEFAULT_CLIENT_ID)
+        mBinding.clientIdEdit.setSelection(mBinding.clientIdEdit.length())
 
-        mSubtopicEdit.setText(DEFAULT_SUB_TOPIC)
-        mSubtopicEdit.setSelection(mSubtopicEdit.length())
+        mBinding.subtopicEdit.setText(DEFAULT_SUB_TOPIC)
+        mBinding.subtopicEdit.setSelection(mBinding.subtopicEdit.length())
 
-        mSendTpoicEdit.setText(DEFAULT_SEND_TOPIC)
-        mSendTpoicEdit.setSelection(mSendTpoicEdit.length())
+        mBinding.sendTopicEdit.setText(DEFAULT_SEND_TOPIC)
+        mBinding.sendTopicEdit.setSelection(mBinding.sendTopicEdit.length())
 
-        mSendEdit.setText(DEFAULT_SEND_CONTENT)
-        mSendEdit.setSelection(mSendEdit.length())
+        mBinding.sendEdit.setText(DEFAULT_SEND_CONTENT)
+        mBinding.sendEdit.setSelection(mBinding.sendEdit.length())
 
-        mAddTopicEdit.setText(DEFAULT_ADD_TOPIC)
-        mAddTopicEdit.setSelection(mAddTopicEdit.length())
+        mBinding.addTopicEdit.setText(DEFAULT_ADD_TOPIC)
+        mBinding.addTopicEdit.setSelection(mBinding.addTopicEdit.length())
 
-        mRemoveTopicEdit.setText(DEFAULT_SUB_TOPIC)
-        mRemoveTopicEdit.setSelection(mRemoveTopicEdit.length())
+        mBinding.removeTopicEdit.setText(DEFAULT_SUB_TOPIC)
+        mBinding.removeTopicEdit.setSelection(mBinding.removeTopicEdit.length())
         showStatusCompleted()
     }
 
     /** 连接，地址[url]，客户端id[clientId]，订阅主题[subTopic] */
-    private fun connect(url: String, clientId: String, subTopic: List<String>) {
+    private fun create(url: String, clientId: String, subTopic: List<String>) {
         if (mHermes != null){
-            if (mHermes?.isConnected() == false){
-                mHermes?.connect()
-            }
-            return
+            releaseHermes()
         }
+
         mHermes = HermesAgent.create()
             .setConnectType(HermesAgent.MQTT)
             .setUrl(url)
@@ -302,9 +271,9 @@ class MqttActivity : BaseActivity(){
     /** 打印信息[result] */
     private fun logResult(result: String) {
         mLog += DateUtils.getCurrentFormatString(DateUtils.TYPE_8).append(" : ").append(result).append("\n")
-        mResultTv.text = mLog
-        mScrollView.post {
-            mScrollView.smoothScrollTo(getScreenWidth(), getScreenHeight())
+        mBinding.resultTv.text = mLog
+        mBinding.scrollView.post {
+            mBinding.scrollView.smoothScrollTo(getScreenWidth(), getScreenHeight())
         }
     }
 

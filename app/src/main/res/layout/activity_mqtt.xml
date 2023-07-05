@@ -75,12 +75,12 @@
                 </LinearLayout>
 
                 <Button
-                    android:id="@+id/connect_btn"
+                    android:id="@+id/create_btn"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="10dp"
                     android:background="@color/colorAccent"
-                    android:text="@string/mqtt_connect"
+                    android:text="@string/mqtt_create"
                     android:textColor="@color/white" />
 
             </LinearLayout>
@@ -293,28 +293,41 @@
 
         </androidx.core.widget.NestedScrollView>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/clean_btn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|bottom"
-            android:layout_marginEnd="10dp"
-            android:layout_marginBottom="60dp"
-            android:elevation="4sp"
-            android:text="@string/mqtt_clean"
-            android:textAllCaps="false"
-            android:textColor="@color/white" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="5dp"
+            android:gravity="end|bottom"
+            android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/disconnect_btn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end|bottom"
-            android:layout_margin="10dp"
-            android:elevation="4sp"
-            android:text="@string/mqtt_disconnect"
-            android:textAllCaps="false"
-            android:textColor="@color/white" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/clean_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:elevation="4sp"
+                android:text="@string/mqtt_clean"
+                android:textAllCaps="false"
+                android:textColor="@color/white" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/connect_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:elevation="4sp"
+                android:text="@string/mqtt_connect"
+                android:textAllCaps="false"
+                android:textColor="@color/white" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/disconnect_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:elevation="4sp"
+                android:text="@string/mqtt_disconnect"
+                android:textAllCaps="false"
+                android:textColor="@color/white" />
+        </LinearLayout>
+
 
     </FrameLayout>
 

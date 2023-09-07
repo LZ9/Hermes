@@ -2,7 +2,7 @@ package com.lodz.android.hermes.modules
 
 import com.lodz.android.hermes.contract.OnWebSocketListener
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
@@ -50,28 +50,20 @@ class WsClient(url: String) : WebSocketClient(URI.create(url)) {
     }
 
     private fun doOpen(handshakedata: ServerHandshake?) {
-        GlobalScope.launch(Dispatchers.Main) {
-            mListener?.onOpen(handshakedata)
-        }
+        MainScope().launch { mListener?.onOpen(handshakedata) }
     }
 
     private fun doMessage(message: String) {
-        GlobalScope.launch(Dispatchers.Main) {
-            mListener?.onMessage(message)
-        }
+        MainScope().launch(Dispatchers.Main) { mListener?.onMessage(message) }
     }
 
     private fun doClose(code: Int, reason: String, remote: Boolean) {
-        GlobalScope.launch(Dispatchers.Main) {
-            mListener?.onClose(code, reason, remote)
-        }
+        MainScope().launch(Dispatchers.Main) { mListener?.onClose(code, reason, remote) }
     }
 
 
     private fun doError(e: Exception) {
-        GlobalScope.launch(Dispatchers.Main) {
-            mListener?.onError(e)
-        }
+        MainScope().launch(Dispatchers.Main) { mListener?.onError(e) }
     }
 
     /** 设置监听器[listener] */

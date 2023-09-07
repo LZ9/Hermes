@@ -35,9 +35,7 @@ open class BaseWebSocketServer @JvmOverloads constructor(port: Int, val isAutoSa
         if (isAutoSaveWs){
             putUser(conn)
         }
-        runOnMain {
-            mListener?.onOpen(conn, handshake)
-        }
+        MainScope().launch { mListener?.onOpen(conn, handshake) }
     }
 
     override fun onClose(conn: WebSocket?, code: Int, reason: String?, remote: Boolean) {
@@ -45,38 +43,28 @@ open class BaseWebSocketServer @JvmOverloads constructor(port: Int, val isAutoSa
         if (isAutoSaveWs){
             removeUser(conn)
         }
-        runOnMain {
-            mListener?.onClose(conn, code, reason ?: "", remote)
-        }
+        MainScope().launch { mListener?.onClose(conn, code, reason ?: "", remote) }
     }
 
     override fun onMessage(conn: WebSocket?, message: String?) {
         Log.i(mLogTag, "有用户发来消息 : $message")
-        runOnMain {
-            mListener?.onMessage(conn, message ?: "")
-        }
+        MainScope().launch { mListener?.onMessage(conn, message ?: "") }
     }
 
     override fun onMessage(conn: WebSocket?, message: ByteBuffer?) {
         super.onMessage(conn, message)
         Log.i(mLogTag, "有用户发来消息 : $message")
-        runOnMain {
-            mListener?.onMessage(conn, message)
-        }
+        MainScope().launch { mListener?.onMessage(conn, message) }
     }
 
     override fun onError(conn: WebSocket?, ex: Exception?) {
         Log.e(mLogTag, "服务器出现异常 : ${ex?.message}")
-        runOnMain {
-            mListener?.onError(conn, ex ?: RuntimeException("WebSocket error but exception is null"))
-        }
+        MainScope().launch { mListener?.onError(conn, ex ?: RuntimeException("WebSocket error but exception is null")) }
     }
 
     override fun onStart() {
         Log.d(mLogTag, "服务器已启动")
-        runOnMain {
-            mListener?.onStart()
-        }
+        MainScope().launch { mListener?.onStart() }
     }
 
     override fun stop() {
@@ -103,7 +91,7 @@ open class BaseWebSocketServer @JvmOverloads constructor(port: Int, val isAutoSa
             return
         }
         if (!mConnectUserMap.containsKey(name)) {
-            mConnectUserMap.put(name, ws)
+            mConnectUserMap[name] = ws
         }
     }
 
@@ -244,7 +232,4 @@ open class BaseWebSocketServer @JvmOverloads constructor(port: Int, val isAutoSa
             }
         }
     }
-
-    /** 主线程执行 */
-    private fun runOnMain(action: () -> Unit): Job = GlobalScope.launch(Dispatchers.Main) { action() }
 }

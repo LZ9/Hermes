@@ -2,7 +2,9 @@ package com.lodz.android.hermes.modules
 
 import android.content.Context
 import com.lodz.android.hermes.contract.*
-import org.eclipse.paho.android.service.MqttAndroidClient
+import info.mqtt.android.service.MqttAndroidClient
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import org.eclipse.paho.client.mqttv3.*
 import java.nio.ByteBuffer
 import java.nio.charset.Charset
@@ -20,7 +22,7 @@ class HermesImpl : Hermes {
     /** mqtt服务端 */
     private var mMqttClient: MqttAndroidClient? = null
     /** mqtt连接配置 */
-    private var mMqttConnectOptions: MqttConnectOptions? = null
+    private lateinit var mMqttConnectOptions: MqttConnectOptions
     /** 订阅监听器 */
     private var mOnSubscribeListener: OnSubscribeListener? = null
     /** 解除订阅监听器 */
@@ -35,13 +37,22 @@ class HermesImpl : Hermes {
     private var isSilent: Boolean = false
 
     override fun init(context: Context?, url: String, clientId: String?, options: MqttConnectOptions?) {
+        if (context == null){
+            MainScope().launch { mOnConnectListener?.onConnectFailure(IllegalArgumentException("context is null")) }
+            return
+        }
+        if (clientId == null){
+            MainScope().launch { mOnConnectListener?.onConnectFailure(IllegalArgumentException("clientId is null")) }
+            return
+        }
         mMqttClient = MqttAndroidClient(context, url, clientId)
         mMqttClient?.setCallback(mMqttCallbackExtended)
-        mMqttConnectOptions = options
-        if (mMqttConnectOptions == null) {
+        if (options == null) {
             mMqttConnectOptions = MqttConnectOptions()
-            mMqttConnectOptions?.isAutomaticReconnect = true
-            mMqttConnectOptions?.isCleanSession = false
+            mMqttConnectOptions.isAutomaticReconnect = true
+            mMqttConnectOptions.isCleanSession = false
+        } else {
+            mMqttConnectOptions = options
         }
     }
 
@@ -55,7 +66,7 @@ class HermesImpl : Hermes {
             } else {
                 HermesLog.d(mTag, "mqtt连接上服务地址 : $serverURI")
             }
-            mOnConnectListener?.onConnectComplete(reconnect)
+            MainScope().launch { mOnConnectListener?.onConnectComplete(reconnect) }
         }
 
         override fun messageArrived(topic: String?, message: MqttMessage?) {
@@ -69,12 +80,12 @@ class HermesImpl : Hermes {
             // 后台推送的消息到达客户端
             val msg = String(message.payload, Charset.forName("UTF-8"))
             HermesLog.i(mTag, "数据到达 : $msg")
-            mOnSubscribeListener?.onMsgArrived(topic ?: "", msg)
+            MainScope().launch { mOnSubscribeListener?.onMsgArrived(topic ?: "", msg) }
         }
 
         override fun connectionLost(cause: Throwable?) {
             val defCause = cause ?: RuntimeException("mqtt connection lost")
-            mOnConnectListener?.onConnectionLost(defCause)// 连接丢失
+            MainScope().launch { mOnConnectListener?.onConnectionLost(defCause) }// 连接丢失
             HermesLog.e(mTag, "mqtt连接丢失 : ${defCause.cause}")
         }
 
@@ -108,11 +119,11 @@ class HermesImpl : Hermes {
     override fun sendTopic(topic: String, content: String) {
         try {
             mMqttClient?.publish(topic, MqttMessage(content.toByteArray()))
-            mOnSendListener?.onSendComplete(topic, content)
+            MainScope().launch { mOnSendListener?.onSendComplete(topic, content) }
             HermesLog.i(mTag, "$topic  --- 数据发送 : $content")
         } catch (e: Exception) {
             e.printStackTrace()
-            mOnSendListener?.onSendFailure(topic, e)
+            MainScope().launch { mOnSendListener?.onSendFailure(topic, e) }
             HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
         }
     }
@@ -120,11 +131,11 @@ class HermesImpl : Hermes {
     override fun sendTopic(topic: String, data: ByteArray) {
         try {
             mMqttClient?.publish(topic, MqttMessage(data))
-            mOnSendListener?.onSendComplete(topic, data)
+            MainScope().launch { mOnSendListener?.onSendComplete(topic, data) }
             HermesLog.i(mTag, "$topic  --- 数据发送 : $data")
         } catch (e: Exception) {
             e.printStackTrace()
-            mOnSendListener?.onSendFailure(topic, e)
+            MainScope().launch { mOnSendListener?.onSendFailure(topic, e) }
             HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
         }
     }
@@ -132,11 +143,11 @@ class HermesImpl : Hermes {
     override fun sendTopic(topic: String, bytes: ByteBuffer) {
         try {
             mMqttClient?.publish(topic, MqttMessage(toByteArray(bytes)))
-            mOnSendListener?.onSendComplete(topic, bytes)
+            MainScope().launch { mOnSendListener?.onSendComplete(topic, bytes) }
             HermesLog.i(mTag, "$topic  --- 数据发送 : $bytes")
         } catch (e: Exception) {
             e.printStackTrace()
-            mOnSendListener?.onSendFailure(topic, e)
+            MainScope().launch { mOnSendListener?.onSendFailure(topic, e) }
             HermesLog.e(mTag, "$topic  --- 数据发送失败 : ${e.cause}")
         }
     }
@@ -159,14 +170,14 @@ class HermesImpl : Hermes {
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                     val defException = exception ?: RuntimeException("mqtt connection failure")
-                    mOnConnectListener?.onConnectFailure(defException)
+                    MainScope().launch { mOnConnectListener?.onConnectFailure(defException) }
                     HermesLog.e(mTag, "mqtt连接失败 : ${defException.cause}")
                 }
             })
 
         } catch (e: Exception) {
             e.printStackTrace()
-            mOnConnectListener?.onConnectFailure(e)
+            MainScope().launch { mOnConnectListener?.onConnectFailure(e) }
             HermesLog.e(mTag, "mqtt连接失败 : ${e.cause}")
         }
     }
@@ -200,20 +211,20 @@ class HermesImpl : Hermes {
                 mMqttClient?.subscribe(topic, 0, null, object : IMqttActionListener {
                     override fun onSuccess(asyncActionToken: IMqttToken?) {
                         HermesLog.v(mTag, "$topic 订阅成功")
-                        mOnSubscribeListener?.onSubscribeSuccess(topic)
+                        MainScope().launch { mOnSubscribeListener?.onSubscribeSuccess(topic) }
                     }
 
                     override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                         val defException = exception ?: RuntimeException("mqtt subscribe failure")
                         HermesLog.e(mTag, "$topic 订阅失败 : ${defException.cause}")
-                        mOnSubscribeListener?.onSubscribeFailure(topic, defException)
+                        MainScope().launch { mOnSubscribeListener?.onSubscribeFailure(topic, defException) }
                     }
                 })
             }
         } catch (e: Exception) {
             e.printStackTrace()
             HermesLog.e(mTag, "订阅失败 : ${e.cause}")
-            mOnSubscribeListener?.onSubscribeFailure("all", e)
+            MainScope().launch { mOnSubscribeListener?.onSubscribeFailure("all", e) }
         }
     }
 
@@ -239,20 +250,20 @@ class HermesImpl : Hermes {
                             }
                         }
                         mSubTopics = list
-                        mOnUnsubscribeListener?.onUnsubscribeSuccess(topic)
+                        MainScope().launch { mOnUnsubscribeListener?.onUnsubscribeSuccess(topic) }
                     }
 
                     override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                         val defException = exception ?: RuntimeException("mqtt unsubscribe failure")
                         HermesLog.e(mTag, "$topic 解除订阅失败 : ${defException.cause}")
-                        mOnUnsubscribeListener?.onUnsubscribeFailure(topic, defException)
+                        MainScope().launch { mOnUnsubscribeListener?.onUnsubscribeFailure(topic, defException) }
                     }
                 })
             }
         } catch (e: Exception) {
             e.printStackTrace()
             HermesLog.e(mTag, "解除订阅失败 : ${e.cause}")
-            mOnUnsubscribeListener?.onUnsubscribeFailure("all", e)
+            MainScope().launch { mOnUnsubscribeListener?.onUnsubscribeFailure("all", e) }
         }
     }
 

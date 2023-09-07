@@ -174,7 +174,7 @@ class WebSocketImpl : Hermes {
 
     /** 设置重连 */
     private fun setReconnect() {
-        mJob = GlobalScope.launch(Dispatchers.IO) {
+        mJob = CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
                 HermesLog.i(mTag, "保活进程启动")
                 while (true) {

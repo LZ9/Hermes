@@ -3,8 +3,9 @@
     <application>
         <!-- Mqtt Service -->
         <service
-            android:name="org.eclipse.paho.android.service.MqttService"
-            android:exported="false" />
+            android:name="info.mqtt.android.service.MqttService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>

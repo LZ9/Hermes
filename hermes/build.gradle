@@ -43,7 +43,7 @@ dependencies {
     // https://jitpack.io/#hannesa2/paho.mqtt.android
     api 'com.github.hannesa2:paho.mqtt.android:4.1'
     // https://github.com/TooTallNate/Java-WebSocket
-    api 'org.java-websocket:Java-WebSocket:1.5.3'
+    api 'org.java-websocket:Java-WebSocket:1.5.4'
 
     implementation 'androidx.annotation:annotation:1.6.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'

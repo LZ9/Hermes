@@ -15,8 +15,11 @@ import java.nio.ByteBuffer
  * @author zhouL
  * @date 2021/6/30
  */
-open class BaseWebSocketServer @JvmOverloads constructor(port: Int, val isAutoSaveWs: Boolean = true) :
-    WebSocketServer(InetSocketAddress(port)) {
+open class BaseWebSocketServer @JvmOverloads constructor(
+    host: String,
+    port: Int,
+    private val isAutoSaveWs: Boolean = true
+) : WebSocketServer(InetSocketAddress(host, port)) {
 
     /** 监听器 */
     private var mListener: OnWebSocketServerListener? = null
@@ -194,7 +197,7 @@ open class BaseWebSocketServer @JvmOverloads constructor(port: Int, val isAutoSa
             return
         }
         for (map in mConnectUserMap) {
-            if (name.equals(map.key)) {
+            if (name == map.key) {
                 val ws = map.value
                 if (ws.isOpen) {
                     ws.send(msg)
@@ -209,7 +212,7 @@ open class BaseWebSocketServer @JvmOverloads constructor(port: Int, val isAutoSa
             return
         }
         for (map in mConnectUserMap) {
-            if (name.equals(map.key)) {
+            if (name == map.key) {
                 val ws = map.value
                 if (ws.isOpen) {
                     ws.send(byteBuffer)
@@ -224,7 +227,7 @@ open class BaseWebSocketServer @JvmOverloads constructor(port: Int, val isAutoSa
             return
         }
         for (map in mConnectUserMap) {
-            if (name.equals(map.key)) {
+            if (name == map.key) {
                 val ws = map.value
                 if (ws.isOpen) {
                     ws.send(byteArray)

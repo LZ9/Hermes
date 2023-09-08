@@ -48,11 +48,18 @@ class WebSocketImpl : Hermes {
             }
 
             override fun onMessage(message: String) {
-                if (isSilent){// 静默时不往外推送数据
-                    return
+                MainScope().launch {
+                    if (isSilent) {// 静默时不往外推送数据
+                        return@launch
+                    }
+                    launch(Dispatchers.IO) {
+                        val ip = mWsClient?.remoteSocketAddress?.hostName ?: ""
+                        launch(Dispatchers.Main) {
+                            HermesLog.i(mTag, "数据到达 ： $message")
+                            mOnSubscribeListener?.onMsgArrived(ip, message)
+                        }
+                    }
                 }
-                HermesLog.i(mTag, "数据到达 ： $message")
-                mOnSubscribeListener?.onMsgArrived("", message)
             }
 
             override fun onClose(code: Int, reason: String, remote: Boolean) {

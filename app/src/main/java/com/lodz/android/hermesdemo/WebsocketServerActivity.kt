@@ -4,8 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import com.lodz.android.corekt.anko.IoScope
 import com.lodz.android.corekt.anko.append
 import com.lodz.android.corekt.anko.getColorCompat
+import com.lodz.android.corekt.anko.getIpv4List
 import com.lodz.android.corekt.anko.toastShort
 import com.lodz.android.corekt.utils.StatusBarUtil
 import com.lodz.android.hermes.contract.OnWebSocketServerListener
@@ -14,6 +16,8 @@ import com.lodz.android.hermesdemo.databinding.ActivityWsServerBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
 import java.nio.ByteBuffer
@@ -43,7 +47,24 @@ class WebsocketServerActivity : BaseActivity() {
         super.findViews(savedInstanceState)
         initTitleBarLayout(getTitleBarLayout())
         StatusBarUtil.setColor(window, getColorCompat(R.color.color_ff6307))
+        mBinding.ipEdit.setText(getIpv4())
         mBinding.portEdit.setText(DEFAULT_PORT.toString())
+    }
+
+    /** 获取IPV4地址 */
+    private fun getIpv4(): String {
+        val list = getIpv4List()
+        if (list.isEmpty()){
+            return ""
+        }
+        if (list.size > 1) {
+            for (pair in list) {
+                if (pair.first.contentEquals("wlan", true)){
+                    return pair.second
+                }
+            }
+        }
+        return list[0].second
     }
 
     private fun initTitleBarLayout(titleBarLayout: TitleBarLayout) {
@@ -66,12 +87,17 @@ class WebsocketServerActivity : BaseActivity() {
     override fun setListeners() {
         super.setListeners()
         mBinding.openBtn.setOnClickListener {
+            val ip = mBinding.ipEdit.text.toString()
             val port = mBinding.portEdit.text.toString()
+            if (ip.isEmpty()){
+                toastShort(R.string.ws_server_ip_hint)
+                return@setOnClickListener
+            }
             if (port.isEmpty()){
                 toastShort(R.string.ws_server_port_hint)
                 return@setOnClickListener
             }
-            openWebSocketServer(port.toInt())
+            openWebSocketServer(ip, port.toInt())
         }
 
         mBinding.closeBtn.setOnClickListener {
@@ -96,57 +122,61 @@ class WebsocketServerActivity : BaseActivity() {
         }
     }
 
-    private fun openWebSocketServer(port: Int) {
+    private fun openWebSocketServer(ip: String, port: Int) {
         if (mWebSocketServer != null) {
             addLog("服务已启动")
             return
         }
         addLog("开启WebSocket服务端")
-        mWebSocketServer = BaseWebSocketServer(port)
+        mWebSocketServer = BaseWebSocketServer(ip, port)
         mWebSocketServer?.setOnWebSocketServerListener(object : OnWebSocketServerListener {
             override fun onOpen(ws: WebSocket?, handshake: ClientHandshake?) {
-                var name = "未知"
-                if (ws != null){
-                    name = ws.remoteSocketAddress.hostName
+                IoScope().launch {
+                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
+                    launch(Dispatchers.Main) {
+                        addLog("$name 用户已连接上")
+                    }
                 }
-                addLog("$name 用户已连接上")
             }
 
             override fun onClose(ws: WebSocket?, code: Int, reason: String, isRemote: Boolean) {
-                var name = "未知"
-                if (ws != null){
-                    name = ws.remoteSocketAddress.hostName
+                IoScope().launch {
+                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
+                    launch(Dispatchers.Main) {
+                        val log = name.append(" 用户已断开")
+                            .append(" ; code : $code")
+                            .append(" ; reason : $reason")
+                            .append(" ; isRemote : $isRemote")
+                        addLog(log)
+                    }
                 }
-                val log = name.append(" 用户已断开")
-                    .append(" ; code : $code")
-                    .append(" ; reason : $reason")
-                    .append(" ; isRemote : $isRemote")
-                addLog(log)
             }
 
-
             override fun onMessage(ws: WebSocket?, message: String) {
-                var name = "未知"
-                if (ws != null){
-                    name = ws.remoteSocketAddress.hostName
+                IoScope().launch {
+                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
+                    launch(Dispatchers.Main) {
+                        addLog("$name 用户发来String消息：$message")
+                    }
                 }
-                addLog("$name 用户发来消息：$message")
             }
 
             override fun onMessage(ws: WebSocket?, byteBuffer: ByteBuffer?) {
-                var name = "未知"
-                if (ws != null){
-                    name = ws.remoteSocketAddress.hostName
+                IoScope().launch {
+                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
+                    launch(Dispatchers.Main) {
+                        addLog("$name 用户发来ByteBuffer消息：$byteBuffer")
+                    }
                 }
-                addLog("$name 用户发来消息：$byteBuffer")
             }
 
             override fun onError(ws: WebSocket?, e: Exception) {
-                var name = "未知"
-                if (ws != null){
-                    name = ws.remoteSocketAddress.hostName
+                IoScope().launch {
+                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
+                    launch(Dispatchers.Main) {
+                        addLog("$name 用户连接出现异常 ; message : ${e.message}")
+                    }
                 }
-                addLog("$name 用户连接出现异常 ; message : ${e.message}")
             }
 
             override fun onStart() {
@@ -155,6 +185,7 @@ class WebsocketServerActivity : BaseActivity() {
         })
         mWebSocketServer?.isReuseAddr = true
         mWebSocketServer?.start()
+        addLog("服务端路径：${mWebSocketServer?.address?.toString()}")
     }
 
     private fun closeWebSocketServer() {

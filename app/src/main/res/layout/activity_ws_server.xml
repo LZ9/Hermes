@@ -16,45 +16,76 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
         android:layout_marginTop="10dp"
+        android:layout_marginEnd="5dp"
+        android:baselineAligned="false"
+        android:gravity="center"
         android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/port_edit"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="@string/ws_server_port_hint"
-            android:importantForAutofill="no"
-            android:inputType="text"
-            android:textSize="14sp"
-            tools:ignore="UnusedAttribute" />
+            android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/open_btn"
+            <EditText
+                android:id="@+id/ip_edit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/ws_server_ip_hint"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:textSize="14sp"
+                tools:ignore="UnusedAttribute" />
+
+            <EditText
+                android:id="@+id/port_edit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/ws_server_port_hint"
+                android:importantForAutofill="no"
+                android:inputType="text"
+                android:textSize="14sp"
+                tools:ignore="UnusedAttribute" />
+        </LinearLayout>
+
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:layout_marginEnd="5dp"
-            android:backgroundTint="@color/color_ff6307"
-            android:text="@string/ws_server_open"
-            android:textColor="@color/white" />
+            android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/close_btn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="5dp"
-            android:layout_marginEnd="10dp"
-            android:backgroundTint="@color/color_ff6307"
-            android:text="@string/ws_server_close"
-            android:textColor="@color/white" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/open_btn"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/color_ff6307"
+                android:text="@string/ws_server_open"
+                android:textColor="@color/white" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/close_btn"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:backgroundTint="@color/color_ff6307"
+                android:text="@string/ws_server_close"
+                android:textColor="@color/white" />
+        </LinearLayout>
 
     </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:background="@color/color_d9d9d9" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:layout_marginEnd="5dp"
         android:orientation="horizontal">
 
         <EditText
@@ -70,10 +101,9 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/send_btn"
-            android:layout_width="wrap_content"
+            android:layout_width="100dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:layout_marginEnd="10dp"
             android:backgroundTint="@color/color_ff6307"
             android:text="@string/ws_server_send"
             android:textColor="@color/white" />

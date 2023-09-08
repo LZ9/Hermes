@@ -50,8 +50,6 @@ class MqttActivity : BaseActivity(){
 
     override fun getViewBindingLayout(): View = mBinding.root
 
-    /** 日志 */
-    private var mLog = ""
     /** 推送客户端 */
     private var mHermes: Hermes? = null
 
@@ -122,7 +120,6 @@ class MqttActivity : BaseActivity(){
 
         // 清空日志按钮
         mBinding.cleanBtn.setOnClickListener {
-            mLog = ""
             mBinding.resultTv.text = ""
         }
 
@@ -226,15 +223,15 @@ class MqttActivity : BaseActivity(){
             })
             .setOnSendListener(object : OnSendListener {
                 override fun onSendComplete(topic: String, content: String) {
-                    logResult("发送成功 : topic ---> $topic   $content")
+                    logResult("String发送成功 : topic ---> $topic   $content")
                 }
 
                 override fun onSendComplete(topic: String, data: ByteArray) {
-                    logResult("发送成功 : topic ---> $topic   $data")
+                    logResult("ByteArray发送成功 : topic ---> $topic   $data")
                 }
 
                 override fun onSendComplete(topic: String, bytes: ByteBuffer) {
-                    logResult("发送成功 : topic ---> $topic   $bytes")
+                    logResult("ByteBuffer发送成功 : topic ---> $topic   $bytes")
                 }
 
                 override fun onSendFailure(topic: String, cause: Throwable) {
@@ -270,11 +267,12 @@ class MqttActivity : BaseActivity(){
 
     /** 打印信息[result] */
     private fun logResult(result: String) {
-        mLog += DateUtils.getCurrentFormatString(DateUtils.TYPE_8).append(" : ").append(result).append("\n")
-        mBinding.resultTv.text = mLog
-        mBinding.scrollView.post {
-            mBinding.scrollView.smoothScrollTo(getScreenWidth(), getScreenHeight())
+        val log = DateUtils.getCurrentFormatString(DateUtils.TYPE_8).append(" : ").append(result)
+        val text = mBinding.resultTv.text
+        if (text.isEmpty()) {
+            mBinding.resultTv.text = log
         }
+        mBinding.resultTv.text = log.append("\n").append(text)
     }
 
 }

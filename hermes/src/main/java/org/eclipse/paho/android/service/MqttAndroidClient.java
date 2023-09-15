@@ -24,6 +24,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -149,7 +150,6 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 
 	// The MqttCallback provided by the application
 	private MqttCallback callback;
-	private MqttTraceHandler traceCallback;
 
 	//The acknowledgment that a message has been processed by the application
 	private final Ack messageAck;
@@ -1315,17 +1315,6 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 		this.callback = callback;
 
 	}
-	
-	/**
-	 * identify the callback to be invoked when making tracing calls back into
-	 * the Activity
-	 * 
-	 * @param traceCallback handler
-	 */
-	public void setTraceCallback(MqttTraceHandler traceCallback) {
-		this.traceCallback = traceCallback;
-	 // mqttService.setTraceCallbackId(traceCallbackId);
-	}
 
 	/**
 	 * turn tracing on and off
@@ -1393,11 +1382,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 		}
 		else if (MqttServiceConstants.DISCONNECT_ACTION.equals(action)) {
 			disconnected(data);
-		}
-		else if (MqttServiceConstants.TRACE_ACTION.equals(action)) {
-			traceAction(data);
-		}else{
-			mqttService.traceError(MqttService.TAG, "Callback action doesn't exist.");	
+		} else{
+			Log.e(MqttService.TAG, "Callback action doesn't exist.");
 		}
 
 	}
@@ -1503,7 +1489,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 				((MqttTokenAndroid) token).notifyFailure(exceptionThrown);
 			}
 		} else {
-			mqttService.traceError(MqttService.TAG, "simpleAction : token is null");	
+			Log.e(MqttService.TAG, "simpleAction : token is null");
 		}
 	}
 
@@ -1584,29 +1570,6 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 			}
 			catch (Exception e) {
 				// Swallow the exception
-			}
-		}
-	}
-	
-	/**
-	 * Process trace action - pass trace data back to the callback
-	 * 
-	 * @param data
-	 */
-	private void traceAction(Bundle data) {
-
-		if (traceCallback != null) {
-			String severity = data.getString(MqttServiceConstants.CALLBACK_TRACE_SEVERITY);
-			String message =  data.getString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE);
-			String tag = data.getString(MqttServiceConstants.CALLBACK_TRACE_TAG);
-			if (MqttServiceConstants.TRACE_DEBUG.equals(severity)) 
-				traceCallback.traceDebug(tag, message);
-			else if (MqttServiceConstants.TRACE_ERROR.equals(severity)) 
-				traceCallback.traceError(tag, message);
-			else
-			{
-				Exception e = (Exception) data.getSerializable(MqttServiceConstants.CALLBACK_EXCEPTION);
-				traceCallback.traceException(tag, message, e);
 			}
 		}
 	}

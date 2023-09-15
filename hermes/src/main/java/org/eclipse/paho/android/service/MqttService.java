@@ -28,6 +28,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.util.Log;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
@@ -226,7 +227,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * </table>
  */
 @SuppressLint("Registered")
-public class MqttService extends Service implements MqttTraceHandler {
+public class MqttService extends Service  {
 
 	// Identifier for Intents, log messages, etc..
 	static final String TAG = "MqttService";
@@ -272,15 +273,11 @@ public class MqttService extends Service implements MqttTraceHandler {
    * @param dataBundle
    *            the data to be passed
    */
-  void callbackToActivity(String clientHandle, Status status,
-      Bundle dataBundle) {
-    // Don't call traceDebug, as it will try to callbackToActivity leading
-    // to recursion.
-    Intent callbackIntent = new Intent(
-        MqttServiceConstants.CALLBACK_TO_ACTIVITY);
+  void callbackToActivity(String clientHandle, Status status, Bundle dataBundle) {
+    // Don't call traceDebug, as it will try to callbackToActivity leading to recursion.
+    Intent callbackIntent = new Intent(MqttServiceConstants.CALLBACK_TO_ACTIVITY);
     if (clientHandle != null) {
-      callbackIntent.putExtra(
-          MqttServiceConstants.CALLBACK_CLIENT_HANDLE, clientHandle);
+      callbackIntent.putExtra( MqttServiceConstants.CALLBACK_CLIENT_HANDLE, clientHandle);
     }
     callbackIntent.putExtra(MqttServiceConstants.CALLBACK_STATUS, status);
     if (dataBundle != null) {
@@ -337,9 +334,9 @@ public class MqttService extends Service implements MqttTraceHandler {
    * Request all clients to reconnect if appropriate
    */
   void reconnect() {
-	traceDebug(TAG, "Reconnect to server, client size=" + connections.size());
+	Log.d(TAG, "Reconnect to server, client size=" + connections.size());
 	for (MqttConnection client : connections.values()) {
-			traceDebug("Reconnect Client:",
+			Log.d("Reconnect Client:",
 					client.getClientId() + '/' + client.getServerURI());
 		if(this.isOnline()){
 			client.reconnect();
@@ -707,67 +704,6 @@ public class MqttService extends Service implements MqttTraceHandler {
 	  return this.traceEnabled;
   }
 
-  /**
-   * Trace debugging information
-   *
-   * @param tag
-   *            identifier for the source of the trace
-   * @param message
-   *            the text to be traced
-   */
-  @Override
-  public void traceDebug(String tag, String message) {
-    traceCallback(MqttServiceConstants.TRACE_DEBUG, tag, message);
-  }
-
-  /**
-   * Trace error information
-   *
-   * @param tag
-   *            identifier for the source of the trace
-   * @param message
-   *            the text to be traced
-   */
-  @Override
-  public void traceError(String tag, String message) {
-    traceCallback(MqttServiceConstants.TRACE_ERROR, tag, message);
-  }
-
-  private void traceCallback(String severity, String tag, String message) {
-    if ((traceCallbackId != null) && (traceEnabled)) {
-      Bundle dataBundle = new Bundle();
-      dataBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.TRACE_ACTION);
-      dataBundle.putString(MqttServiceConstants.CALLBACK_TRACE_SEVERITY, severity);
-      dataBundle.putString(MqttServiceConstants.CALLBACK_TRACE_TAG, tag);
-      //dataBundle.putString(MqttServiceConstants.CALLBACK_TRACE_ID, traceCallbackId);
-      dataBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE, message);
-      callbackToActivity(traceCallbackId, Status.ERROR, dataBundle);
-    }
-  }
-
-  /**
-   * trace exceptions
-   *
-   * @param tag
-   *            identifier for the source of the trace
-   * @param message
-   *            the text to be traced
-   * @param e
-   *            the exception
-   */
-  @Override
-  public void traceException(String tag, String message, Exception e) {
-    if (traceCallbackId != null) {
-      Bundle dataBundle = new Bundle();
-      dataBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.TRACE_ACTION);
-      dataBundle.putString(MqttServiceConstants.CALLBACK_TRACE_SEVERITY, MqttServiceConstants.TRACE_EXCEPTION);
-      dataBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE,  message);
-      dataBundle.putSerializable(MqttServiceConstants.CALLBACK_EXCEPTION, e); //TODO: Check
-      dataBundle.putString(MqttServiceConstants.CALLBACK_TRACE_TAG, tag);
-      //dataBundle.putString(MqttServiceConstants.CALLBACK_TRACE_ID, traceCallbackId);
-      callbackToActivity(traceCallbackId, Status.ERROR, dataBundle);
-    }
-  }
 
   @SuppressWarnings("deprecation")
   private void registerBroadcastReceivers() {
@@ -814,17 +750,16 @@ public class MqttService extends Service implements MqttTraceHandler {
 		@Override
         @SuppressLint("Wakelock")
 		public void onReceive(Context context, Intent intent) {
-			traceDebug(TAG, "Internal network status receive.");
+          Log.d(TAG, "Internal network status receive.");
 			// we protect against the phone switching off
 			// by requesting a wake lock - we request the minimum possible wake
 			// lock - just enough to keep the CPU running until we've finished
 			PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-			WakeLock wl = pm
-					.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MQTT");
+			WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MQTT");
 			wl.acquire();
-			traceDebug(TAG,"Reconnect for Network recovery.");
+			Log.d(TAG,"Reconnect for Network recovery.");
 			if (isOnline()) {
-				traceDebug(TAG,"Online,reconnect.");
+				Log.d(TAG,"Online,reconnect.");
 				// we have an internet connection - have another try at
 				// connecting
 				reconnect();
@@ -872,7 +807,7 @@ public class MqttService extends Service implements MqttTraceHandler {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-			traceDebug(TAG,"Reconnect since BroadcastReceiver.");
+			Log.d(TAG,"Reconnect since BroadcastReceiver.");
 			if (cm.getBackgroundDataSetting()) {
 				if (!backgroundDataEnabled) {
 					backgroundDataEnabled = true;

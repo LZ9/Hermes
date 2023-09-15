@@ -24,7 +24,7 @@ class MqttActivity : BaseActivity(){
     companion object {
 
         /** 默认地址 */
-        private const val DEFAULT_URL = "tcp://192.168.1.60:1883"
+        private const val DEFAULT_URL = "tcp://192.168.1.193:1883"
 
         /** 默认客户端id */
         private const val DEFAULT_CLIENT_ID = "12345"

@@ -19,8 +19,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 /**
  * <p>
- * Implementation of the IMqttDeliveryToken interface for use from within the
- * MqttAndroidClient implementation
+ * Implementation of the IMqttDeliveryToken interface for use from within the MqttAndroidClient implementation
  */
 class MqttDeliveryTokenAndroid extends MqttTokenAndroid
 		implements IMqttDeliveryToken {

@@ -1,16 +1,18 @@
-package org.eclipse.paho.android.service;
+package org.eclipse.paho.android.service.db;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import org.eclipse.paho.android.service.MqttServiceConstants;
+
 /**
  * 数据库帮助类
  * @author zhouL
  * @date 2023/9/15
  */
-class MQTTDatabaseHelper extends SQLiteOpenHelper {
+public class MQTTDatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "MQTTDatabaseHelper";
 
     private static final String DATABASE_NAME = "mqttAndroidService.db";

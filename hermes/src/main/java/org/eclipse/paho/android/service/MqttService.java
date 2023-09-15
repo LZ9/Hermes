@@ -34,6 +34,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.lodz.android.hermes.paho.android.service.Status;
 
+import org.eclipse.paho.android.service.db.DatabaseMessageStore;
+import org.eclipse.paho.android.service.db.MessageStore;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;

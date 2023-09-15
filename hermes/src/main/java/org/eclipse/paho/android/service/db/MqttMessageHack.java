@@ -1,4 +1,4 @@
-package org.eclipse.paho.android.service;
+package org.eclipse.paho.android.service.db;
 
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 

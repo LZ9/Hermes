@@ -16,7 +16,7 @@ package org.eclipse.paho.android.service;
  * Various strings used to identify operations or data in the Android MQTT
  * service, mainly used in Intents passed between Activities and the Service.
  */
-interface MqttServiceConstants {
+public interface MqttServiceConstants {
 
   /** 数据库字段-是否重复 */
   String DB_COLUMN_DUPLICATE = "duplicate";

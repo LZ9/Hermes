@@ -13,7 +13,7 @@
  *   Contributors:
  *     James Sutton - Removing SQL Injection vunerability (bug 467378)
  */
-package org.eclipse.paho.android.service;
+package org.eclipse.paho.android.service.db;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -22,6 +22,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
+import org.eclipse.paho.android.service.MqttServiceConstants;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.Iterator;
@@ -29,7 +30,7 @@ import java.util.Iterator;
 /**
  * Implementation of the {@link MessageStore} interface, using a SQLite database
  */
-class DatabaseMessageStore implements MessageStore {
+public class DatabaseMessageStore implements MessageStore {
 
     // TAG used for indentify trace data etc.
     private static final String TAG = "DatabaseMessageStore";
@@ -164,7 +165,7 @@ class DatabaseMessageStore implements MessageStore {
      * @return iterator of all the arrived MQTT messages
      */
     @Override
-    public Iterator<DbStoredData> getAllArrivedMessages(  final String clientHandle) {
+    public Iterator<DbStoredData> getAllArrivedMessages(final String clientHandle) {
         return new Iterator<DbStoredData>() {
             private Cursor c;
             private boolean hasNext;

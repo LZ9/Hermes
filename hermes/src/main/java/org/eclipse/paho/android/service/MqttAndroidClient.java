@@ -1344,8 +1344,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 	public void onReceive(Context context, Intent intent) {
 		Bundle data = intent.getExtras();
 
-		String handleFromIntent = data
-				.getString(MqttServiceConstants.CALLBACK_CLIENT_HANDLE);
+		String handleFromIntent = data.getString(MqttServiceConstants.CALLBACK_CLIENT_HANDLE);
 
 		if ((handleFromIntent == null)
 				|| (!handleFromIntent.equals(clientHandle))) {

@@ -39,9 +39,10 @@ android {
 dependencies {
     // https://github.com/eclipse/paho.mqtt.android
     api 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+    api 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
 //    api 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
     // https://jitpack.io/#hannesa2/paho.mqtt.android
-    api 'com.github.hannesa2:paho.mqtt.android:4.1'
+//    api 'com.github.hannesa2:paho.mqtt.android:4.1'
     // https://github.com/TooTallNate/Java-WebSocket
     api 'org.java-websocket:Java-WebSocket:1.5.4'
 

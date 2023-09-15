@@ -2,9 +2,9 @@ package com.lodz.android.hermes.modules
 
 import android.content.Context
 import com.lodz.android.hermes.contract.*
-import info.mqtt.android.service.MqttAndroidClient
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import org.eclipse.paho.android.service.MqttAndroidClient
 import org.eclipse.paho.client.mqttv3.*
 import java.nio.ByteBuffer
 import java.nio.charset.Charset

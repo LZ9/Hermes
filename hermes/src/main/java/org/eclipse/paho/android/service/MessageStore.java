@@ -34,31 +34,6 @@ import java.util.Iterator;
 interface MessageStore {
 
 	/**
-	 * External representation of a stored message
-	 */
-	interface StoredMessage {
-		/**
-		 * @return the identifier for the message within the store
-		 */
-		String getMessageId();
-
-		/**
-		 * @return the identifier of the client which stored this message
-		 */
-		String getClientHandle();
-
-		/**
-		 * @return the topic on which the message was received
-		 */
-		String getTopic();
-
-		/**
-		 * @return the identifier of the client which stored this message
-		 */
-		MqttMessage getMessage();
-	}
-
-	/**
 	 * Store a message and return an identifier for it
 	 * 
 	 * @param clientHandle
@@ -88,7 +63,7 @@ interface MessageStore {
 	 *            identifier for the client - if null, then messages for all
 	 *            clients are returned
 	 */
-	Iterator<StoredMessage> getAllArrivedMessages(String clientHandle);
+	Iterator<DbStoredData> getAllArrivedMessages(String clientHandle);
 
 	/**
 	 * Discard stored messages, usually for a specific client

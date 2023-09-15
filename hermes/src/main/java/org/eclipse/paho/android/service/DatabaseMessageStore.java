@@ -20,7 +20,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -35,97 +34,20 @@ class DatabaseMessageStore implements MessageStore {
     // TAG used for indentify trace data etc.
     private static final String TAG = "DatabaseMessageStore";
 
-    // One "private" database column name
-    // The other database column names are defined in MqttServiceConstants
-    private static final String MTIMESTAMP = "mtimestamp";
-
-    // the name of the table in the database to which we will save messages
-    private static final String ARRIVED_MESSAGE_TABLE_NAME = "MqttArrivedMessageTable";
-
     // the database
     private SQLiteDatabase db = null;
 
     // a SQLiteOpenHelper specific for this database
     private MQTTDatabaseHelper mqttDb = null;
 
-    /**
-     * We need a SQLiteOpenHelper to handle database creation and updating
-     */
-    private static class MQTTDatabaseHelper extends SQLiteOpenHelper {
-        // TAG used for indentify trace data etc.
-        private static final String TAG = "MQTTDatabaseHelper";
 
-        private static final String DATABASE_NAME = "mqttAndroidService.db";
-
-        // database version, used to recognise when we need to upgrade
-        // (delete and recreate)
-        private static final int DATABASE_VERSION = 1;
-
-        /**
-         * Constructor.
-         *
-         * @param context
-         */
-        public MQTTDatabaseHelper(Context context) {
-            super(context, DATABASE_NAME, null, DATABASE_VERSION);
-        }
-
-        /**
-         * When the database is (re)created, create our table
-         *
-         * @param database
-         */
-        @Override
-        public void onCreate(SQLiteDatabase database) {
-            String createArrivedTableStatement = "CREATE TABLE "
-                    + ARRIVED_MESSAGE_TABLE_NAME + "("
-                    + MqttServiceConstants.MESSAGE_ID + " TEXT PRIMARY KEY, "
-                    + MqttServiceConstants.CLIENT_HANDLE + " TEXT, "
-                    + MqttServiceConstants.DESTINATION_NAME + " TEXT, "
-                    + MqttServiceConstants.PAYLOAD + " BLOB, "
-                    + MqttServiceConstants.QOS + " INTEGER, "
-                    + MqttServiceConstants.RETAINED + " TEXT, "
-                    + MqttServiceConstants.DUPLICATE + " TEXT, " + MTIMESTAMP
-                    + " INTEGER" + ");";
-            Log.d(TAG, "onCreate {" + createArrivedTableStatement + "}");
-            try {
-                database.execSQL(createArrivedTableStatement);
-                Log.d(TAG, "created the table");
-            } catch (SQLException e) {
-                Log.e(TAG, "onCreate", e);
-                throw e;
-            }
-        }
-
-        /**
-         * To upgrade the database, drop and recreate our table
-         *
-         * @param db         the database
-         * @param oldVersion ignored
-         * @param newVersion ignored
-         */
-
-        @Override
-        public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            Log.d(TAG, "onUpgrade");
-            try {
-                db.execSQL("DROP TABLE IF EXISTS " + ARRIVED_MESSAGE_TABLE_NAME);
-            } catch (SQLException e) {
-                Log.e(TAG, "onUpgrade", e);
-                throw e;
-            }
-            onCreate(db);
-            Log.d(TAG, "onUpgrade complete");
-        }
-    }
 
     /**
      * Constructor - create a DatabaseMessageStore to store arrived MQTT message
      *
-     * @param service our parent MqttService
      * @param context a context to use for android calls
      */
-    public DatabaseMessageStore(MqttService service, Context context) {
+    public DatabaseMessageStore(Context context) {
 
         // Open message database
         mqttDb = new MQTTDatabaseHelper(context);
@@ -159,16 +81,16 @@ class DatabaseMessageStore implements MessageStore {
 
         ContentValues values = new ContentValues();
         String id = java.util.UUID.randomUUID().toString();
-        values.put(MqttServiceConstants.MESSAGE_ID, id);
-        values.put(MqttServiceConstants.CLIENT_HANDLE, clientHandle);
-        values.put(MqttServiceConstants.DESTINATION_NAME, topic);
-        values.put(MqttServiceConstants.PAYLOAD, payload);
-        values.put(MqttServiceConstants.QOS, qos);
-        values.put(MqttServiceConstants.RETAINED, retained);
-        values.put(MqttServiceConstants.DUPLICATE, duplicate);
-        values.put(MTIMESTAMP, System.currentTimeMillis());
+        values.put(MqttServiceConstants.DB_COLUMN_MESSAGE_ID, id);
+        values.put(MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE, clientHandle);
+        values.put(MqttServiceConstants.DB_COLUMN_DESTINATION_NAME, topic);
+        values.put(MqttServiceConstants.DB_COLUMN_PAYLOAD, payload);
+        values.put(MqttServiceConstants.DB_COLUMN_QOS, qos);
+        values.put(MqttServiceConstants.DB_COLUMN_RETAINED, retained);
+        values.put(MqttServiceConstants.DB_COLUMN_DUPLICATE, duplicate);
+        values.put(MqttServiceConstants.DB_COLUMN_MTIMESTAMP, System.currentTimeMillis());
         try {
-            db.insertOrThrow(ARRIVED_MESSAGE_TABLE_NAME, null, values);
+            db.insertOrThrow(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, null, values);
         } catch (SQLException e) {
             Log.e(TAG, "onUpgrade", e);
             throw e;
@@ -180,12 +102,12 @@ class DatabaseMessageStore implements MessageStore {
 
     private int getArrivedRowCount(String clientHandle) {
         int count = 0;
-        String[] projection = { MqttServiceConstants.MESSAGE_ID, };
-        String selection = MqttServiceConstants.CLIENT_HANDLE + "=?";
+        String[] projection = { MqttServiceConstants.DB_COLUMN_MESSAGE_ID, };
+        String selection = MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE + "=?";
         String[] selectionArgs = new String[1];
         selectionArgs[0] = clientHandle;
         Cursor c = db.query(
-                ARRIVED_MESSAGE_TABLE_NAME, // Table Name
+                MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, // Table Name
                 projection, // The columns to return;
                 selection, // Columns for WHERE Clause
                 selectionArgs, // The values for the WHERE Cause
@@ -220,7 +142,7 @@ class DatabaseMessageStore implements MessageStore {
         selectionArgs[1] = clientHandle;
 
         try {
-            rows = db.delete(ARRIVED_MESSAGE_TABLE_NAME, MqttServiceConstants.MESSAGE_ID + "=? AND " + MqttServiceConstants.CLIENT_HANDLE + "=?", selectionArgs);
+            rows = db.delete(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, MqttServiceConstants.DB_COLUMN_MESSAGE_ID + "=? AND " + MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE + "=?", selectionArgs);
         } catch (SQLException e) {
             Log.e(TAG, "discardArrived", e);
             throw e;
@@ -242,9 +164,8 @@ class DatabaseMessageStore implements MessageStore {
      * @return iterator of all the arrived MQTT messages
      */
     @Override
-    public Iterator<StoredMessage> getAllArrivedMessages(
-            final String clientHandle) {
-        return new Iterator<StoredMessage>() {
+    public Iterator<DbStoredData> getAllArrivedMessages(  final String clientHandle) {
+        return new Iterator<DbStoredData>() {
             private Cursor c;
             private boolean hasNext;
             private final String[] selectionArgs = { clientHandle,  };
@@ -255,7 +176,7 @@ class DatabaseMessageStore implements MessageStore {
                 // anonymous initialiser to start a suitable query
                 // and position at the first row, if one exists
                 if (clientHandle == null) {
-                    c = db.query(ARRIVED_MESSAGE_TABLE_NAME,
+                    c = db.query(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME,
                             null,
                             null,
                             null,
@@ -263,9 +184,9 @@ class DatabaseMessageStore implements MessageStore {
                             null,
                             "mtimestamp ASC");
                 } else {
-                    c = db.query(ARRIVED_MESSAGE_TABLE_NAME,
+                    c = db.query(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME,
                             null,
-                            MqttServiceConstants.CLIENT_HANDLE + "=?",
+                            MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE + "=?",
                             selectionArgs,
                             null,
                             null,
@@ -283,20 +204,20 @@ class DatabaseMessageStore implements MessageStore {
             }
 
             @Override
-            public StoredMessage next() {
-                String messageId = c.getString(c.getColumnIndex(MqttServiceConstants.MESSAGE_ID));
-                String clientHandle = c.getString(c.getColumnIndex(MqttServiceConstants.CLIENT_HANDLE));
-                String topic = c.getString(c.getColumnIndex(MqttServiceConstants.DESTINATION_NAME));
-                byte[] payload = c.getBlob(c.getColumnIndex(MqttServiceConstants.PAYLOAD));
-                int qos = c.getInt(c.getColumnIndex(MqttServiceConstants.QOS));
-                boolean retained = Boolean.parseBoolean(c.getString(c.getColumnIndex(MqttServiceConstants.RETAINED)));
-                boolean dup = Boolean.parseBoolean(c.getString(c.getColumnIndex(MqttServiceConstants.DUPLICATE)));
+            public DbStoredData next() {
+                String messageId = c.getString(c.getColumnIndex(MqttServiceConstants.DB_COLUMN_MESSAGE_ID));
+                String clientHandle = c.getString(c.getColumnIndex(MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE));
+                String topic = c.getString(c.getColumnIndex(MqttServiceConstants.DB_COLUMN_DESTINATION_NAME));
+                byte[] payload = c.getBlob(c.getColumnIndex(MqttServiceConstants.DB_COLUMN_PAYLOAD));
+                int qos = c.getInt(c.getColumnIndex(MqttServiceConstants.DB_COLUMN_QOS));
+                boolean retained = Boolean.parseBoolean(c.getString(c.getColumnIndex(MqttServiceConstants.DB_COLUMN_RETAINED)));
+                boolean dup = Boolean.parseBoolean(c.getString(c.getColumnIndex(MqttServiceConstants.DB_COLUMN_DUPLICATE)));
 
                 // build the result
                 MqttMessageHack message = new MqttMessageHack(payload);
                 message.setQos(qos);
                 message.setRetained(retained);
-                message.setDuplicate(dup);
+                message.setDuplicateHack(dup);
 
                 // move on
                 hasNext = c.moveToNext();
@@ -336,61 +257,12 @@ class DatabaseMessageStore implements MessageStore {
         int rows = 0;
         if (clientHandle == null) {
             Log.d(TAG, "clearArrivedMessages: clearing the table");
-            rows = db.delete(ARRIVED_MESSAGE_TABLE_NAME, null, null);
+            rows = db.delete(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, null, null);
         } else {
             Log.d(TAG, "clearArrivedMessages: clearing the table of " + clientHandle + " messages");
-            rows = db.delete(ARRIVED_MESSAGE_TABLE_NAME, MqttServiceConstants.CLIENT_HANDLE + "=?", selectionArgs);
-
+            rows = db.delete(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE + "=?", selectionArgs);
         }
         Log.d(TAG, "clearArrivedMessages: rows affected = " + rows);
-    }
-
-    private class DbStoredData implements StoredMessage {
-        private String messageId;
-        private String clientHandle;
-        private String topic;
-        private MqttMessage message;
-
-        DbStoredData(String messageId, String clientHandle, String topic, MqttMessage message) {
-            this.messageId = messageId;
-            this.topic = topic;
-            this.message = message;
-        }
-
-        @Override
-        public String getMessageId() {
-            return messageId;
-        }
-
-        @Override
-        public String getClientHandle() {
-            return clientHandle;
-        }
-
-        @Override
-        public String getTopic() {
-            return topic;
-        }
-
-        @Override
-        public MqttMessage getMessage() {
-            return message;
-        }
-    }
-
-    /**
-     * A way to get at the "setDuplicate" method of MqttMessage
-     */
-    private class MqttMessageHack extends MqttMessage {
-
-        public MqttMessageHack(byte[] payload) {
-            super(payload);
-        }
-
-        @Override
-        protected void setDuplicate(boolean dup) {
-            super.setDuplicate(dup);
-        }
     }
 
     @Override

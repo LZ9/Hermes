@@ -21,7 +21,6 @@ import android.util.Log;
 
 import com.lodz.android.hermes.paho.android.service.Status;
 
-import org.eclipse.paho.android.service.MessageStore.StoredMessage;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -342,12 +341,10 @@ class MqttConnection implements MqttCallbackExtended {
 	 * have already purged any such messages from our messageStore.
 	 */
 	private void deliverBacklog() {
-		Iterator<StoredMessage> backlog = service.messageStore
-				.getAllArrivedMessages(clientHandle);
+		Iterator<DbStoredData> backlog = service.messageStore.getAllArrivedMessages(clientHandle);
 		while (backlog.hasNext()) {
-			StoredMessage msgArrived = backlog.next();
-			Bundle resultBundle = messageToBundle(msgArrived.getMessageId(),
-					msgArrived.getTopic(), msgArrived.getMessage());
+			DbStoredData msgArrived = backlog.next();
+			Bundle resultBundle = messageToBundle(msgArrived.messageId, msgArrived.topic, msgArrived.message);
 			resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION,
 					MqttServiceConstants.MESSAGE_ARRIVED_ACTION);
 			service.callbackToActivity(clientHandle, Status.OK, resultBundle);

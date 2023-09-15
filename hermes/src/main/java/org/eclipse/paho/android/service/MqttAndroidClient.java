@@ -130,8 +130,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 	// The Android Service which will process our mqtt calls
 	private MqttService mqttService;
 
-	// An identifier for the underlying client connection, which we can pass to
-	// the service
+	// An identifier for the underlying client connection, which we can pass to the service
 	private String clientHandle;
 
 	private Context myContext;

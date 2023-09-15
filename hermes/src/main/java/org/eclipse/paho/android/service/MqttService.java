@@ -301,8 +301,7 @@ public class MqttService extends Service  {
   public String getClient(String serverURI, String clientId, String contextId, MqttClientPersistence persistence) {
     String clientHandle = serverURI + ":" + clientId+":"+contextId;
     if (!connections.containsKey(clientHandle)) {
-      MqttConnection client = new MqttConnection(this, serverURI,
-          clientId, persistence, clientHandle);
+      MqttConnection client = new MqttConnection(this, serverURI, clientId, persistence, clientHandle);
       connections.put(clientHandle, client);
     }
     return clientHandle;
@@ -622,7 +621,7 @@ public class MqttService extends Service  {
 
     // create somewhere to buffer received messages until
     // we know that they have been passed to the application
-    messageStore = new DatabaseMessageStore(this, this);
+    messageStore = new DatabaseMessageStore( this);
 	}
 
 

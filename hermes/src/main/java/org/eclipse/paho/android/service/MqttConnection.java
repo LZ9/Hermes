@@ -22,6 +22,7 @@ import android.util.Log;
 import com.lodz.android.hermes.paho.android.service.Status;
 
 import org.eclipse.paho.android.service.db.DbStoredData;
+import org.eclipse.paho.android.service.sender.AlarmPingSender;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -286,8 +287,7 @@ class MqttConnection implements MqttCallbackExtended {
 			// if myClient is null, then create a new connection
 			else {
 				alarmPingSender = new AlarmPingSender(service);
-				myClient = new MqttAsyncClient(serverURI, clientId,
-						persistence, alarmPingSender);
+				myClient = new MqttAsyncClient(serverURI, clientId, persistence, alarmPingSender);
 				myClient.setCallback(this);
 
 				Log.d(TAG,"Do Real connect!");

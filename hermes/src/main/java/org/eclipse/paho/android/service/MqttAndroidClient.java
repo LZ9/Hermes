@@ -715,11 +715,9 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 		MqttMessage message = new MqttMessage(payload);
 		message.setQos(qos);
 		message.setRetained(retained);
-		MqttDeliveryTokenAndroid token = new MqttDeliveryTokenAndroid(
-				this, userContext, callback, message);
+		MqttDeliveryTokenAndroid token = new MqttDeliveryTokenAndroid(this, userContext, callback, message);
 		String activityToken = storeToken(token);
-		IMqttDeliveryToken internalToken = mqttService.publish(clientHandle,
-				topic, payload, qos, retained, null, activityToken);
+		IMqttDeliveryToken internalToken = mqttService.publish(clientHandle, topic, payload, qos, retained, null, activityToken);
 		token.setDelegate(internalToken);
 		return token;
 	}

@@ -31,6 +31,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.lodz.android.hermes.paho.android.service.Status;
 
+import org.eclipse.paho.android.service.token.MqttDeliveryTokenAndroid;
+import org.eclipse.paho.android.service.token.MqttTokenAndroid;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
@@ -493,8 +495,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 	 */
 	@Override
 	public IMqttToken disconnect() throws MqttException {
-		IMqttToken token = new MqttTokenAndroid(this, null,
-				null);
+		IMqttToken token = new MqttTokenAndroid(this, null,null);
 		String activityToken = storeToken(token);
 		mqttService.disconnect(clientHandle, null, activityToken);
 		return token;
@@ -522,8 +523,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 	 */
 	@Override
 	public IMqttToken disconnect(long quiesceTimeout) throws MqttException {
-		IMqttToken token = new MqttTokenAndroid(this, null,
-				null);
+		IMqttToken token = new MqttTokenAndroid(this, null, null);
 		String activityToken = storeToken(token);
 		mqttService.disconnect(clientHandle, quiesceTimeout, null,
 				activityToken);
@@ -808,11 +808,9 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 	public IMqttDeliveryToken publish(String topic, MqttMessage message,
 			Object userContext, IMqttActionListener callback)
 			throws MqttException, MqttPersistenceException {
-		MqttDeliveryTokenAndroid token = new MqttDeliveryTokenAndroid(
-				this, userContext, callback, message);
+		MqttDeliveryTokenAndroid token = new MqttDeliveryTokenAndroid( this, userContext, callback, message);
 		String activityToken = storeToken(token);
-		IMqttDeliveryToken internalToken = mqttService.publish(clientHandle,
-				topic, message, null, activityToken);
+		IMqttDeliveryToken internalToken = mqttService.publish(clientHandle, topic, message, null, activityToken);
 		token.setDelegate(internalToken);
 		return token;
 	}

@@ -34,7 +34,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.lodz.android.hermes.paho.android.service.Status;
 
-import org.eclipse.paho.android.service.db.DatabaseMessageStore;
+import org.eclipse.paho.android.service.db.MessageStoreImpl;
 import org.eclipse.paho.android.service.db.MessageStore;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -592,15 +592,14 @@ public class MqttService extends Service  {
   }
 
   /**
-   * Called by the Activity when a message has been passed back to the
-   * application
+   * Called by the Activity when a message has been passed back to the application
    *
    * @param clientHandle identifier for the client which received the message
    * @param id identifier for the MQTT message
    * @return {@link Status}
    */
   public Status acknowledgeMessageArrival(String clientHandle, String id) {
-    if (messageStore.discardArrived(clientHandle, id)) {
+    if (messageStore.deleteArrivedMessage(clientHandle, id)) {
       return Status.OK;
     }
     else {
@@ -623,7 +622,7 @@ public class MqttService extends Service  {
 
     // create somewhere to buffer received messages until
     // we know that they have been passed to the application
-    messageStore = new DatabaseMessageStore( this);
+    messageStore = new MessageStoreImpl( this);
 	}
 
 
@@ -644,9 +643,6 @@ public class MqttService extends Service  {
     }
 
 		unregisterBroadcastReceivers();
-
-		if (this.messageStore !=null )
-			this.messageStore.close();
 
 		super.onDestroy();
 	}

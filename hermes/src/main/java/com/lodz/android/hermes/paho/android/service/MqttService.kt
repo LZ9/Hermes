@@ -540,7 +540,7 @@
 //        mqttServiceBinder = MqttServiceBinder(this)
 //
 //        // create somewhere to buffer received messages until we know that they have been passed to the application
-//        messageStore = DatabaseMessageStore(this, this)
+//        messageStore = MessageStoreImpl(this, this)
 //    }
 //
 //    override fun onDestroy() {

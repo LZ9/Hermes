@@ -37,9 +37,9 @@ import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -201,7 +201,7 @@ class MqttConnection implements MqttCallbackExtended {
 
 		if (connectOptions.isCleanSession()) { // if it's a clean session,
 			// discard old data
-			service.messageStore.clearArrivedMessages(clientHandle);
+			service.messageStore.clearAllMessages(clientHandle);
 		}
 
 		Log.d(TAG, "Connecting {" + serverURI + "} as {" + clientId + "}");
@@ -342,13 +342,12 @@ class MqttConnection implements MqttCallbackExtended {
 	 * have already purged any such messages from our messageStore.
 	 */
 	private void deliverBacklog() {
-		Iterator<DbStoredData> backlog = service.messageStore.getAllArrivedMessages(clientHandle);
-		while (backlog.hasNext()) {
-			DbStoredData msgArrived = backlog.next();
-			Bundle resultBundle = messageToBundle(msgArrived.messageId, msgArrived.topic, msgArrived.message);
-			resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION,
-					MqttServiceConstants.MESSAGE_ARRIVED_ACTION);
+		ArrayList<DbStoredData> backlog = service.messageStore.getAllMessages(clientHandle);
+		for (DbStoredData data : backlog) {
+			Bundle resultBundle = messageToBundle(data.messageId, data.topic, data.message);
+			resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.MESSAGE_ARRIVED_ACTION);
 			service.callbackToActivity(clientHandle, Status.OK, resultBundle);
+
 		}
 	}
 
@@ -430,7 +429,7 @@ class MqttConnection implements MqttCallbackExtended {
 
 		if (connectOptions != null && connectOptions.isCleanSession()) {
 			// assume we'll clear the stored messages at this point
-			service.messageStore.clearArrivedMessages(clientHandle);
+			service.messageStore.clearAllMessages(clientHandle);
 		}
 
 		releaseWakeLock();
@@ -473,7 +472,7 @@ class MqttConnection implements MqttCallbackExtended {
 
 		if (connectOptions != null && connectOptions.isCleanSession()) {
 			// assume we'll clear the stored messages at this point
-			service.messageStore.clearArrivedMessages(clientHandle);
+			service.messageStore.clearAllMessages(clientHandle);
 		}
 		releaseWakeLock();
 	}
@@ -900,17 +899,13 @@ class MqttConnection implements MqttCallbackExtended {
 	public void messageArrived(String topic, MqttMessage message)
 			throws Exception {
 
-		Log.d(TAG,
-				"messageArrived(" + topic + ",{" + message.toString() + "})");
+		Log.d(TAG, "messageArrived(" + topic + ",{" + message.toString() + "})");
 
-		String messageId = service.messageStore.storeArrived(clientHandle,
-				topic, message);
+		String messageId = service.messageStore.saveMessage(clientHandle, topic, message);
 	
 		Bundle resultBundle = messageToBundle(messageId, topic, message);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION,
-				MqttServiceConstants.MESSAGE_ARRIVED_ACTION);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_MESSAGE_ID,
-				messageId);
+		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.MESSAGE_ARRIVED_ACTION);
+		resultBundle.putString(MqttServiceConstants.CALLBACK_MESSAGE_ID, messageId);
 		service.callbackToActivity(clientHandle, Status.OK, resultBundle);
 				
 	}

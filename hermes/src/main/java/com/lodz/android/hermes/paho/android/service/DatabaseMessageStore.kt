@@ -13,11 +13,11 @@
 ///**
 // * Implementation of the {@link MessageStore} interface, using a SQLite database
 // */
-//class DatabaseMessageStore(service: MqttService, context: Context) : MessageStore {
+//class MessageStoreImpl(service: MqttService, context: Context) : MessageStore {
 //
 //    companion object{
 //        // TAG used for indentify trace data etc.
-//        private const val TAG = "DatabaseMessageStore"
+//        private const val TAG = "MessageStoreImpl"
 //
 //        // One "private" database column name
 //        // The other database column names are defined in MqttServiceConstants
@@ -50,7 +50,7 @@
 //        mqttDb =  MQTTDatabaseHelper(traceHandler, context)
 //
 //        // Android documentation suggests that this perhaps could/should be done in another thread, but as the database is only one table, I doubt it matters...
-//        traceHandler?.traceDebug(TAG, "DatabaseMessageStore<init> complete")
+//        traceHandler?.traceDebug(TAG, "MessageStoreImpl<init> complete")
 //    }
 //
 //    /** We need a SQLiteOpenHelper to handle database creation and updating */

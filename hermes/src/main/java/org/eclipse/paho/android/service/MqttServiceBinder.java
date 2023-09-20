@@ -22,20 +22,20 @@ import android.os.Binder;
  * </ul>
  * 
  */
-class MqttServiceBinder extends Binder {
+public class MqttServiceBinder extends Binder {
 
-	private MqttService mqttService;
+	private final MqttService mMqttService;
 	private String activityToken;
 
-	MqttServiceBinder(MqttService mqttService) {
-		this.mqttService = mqttService;
+	public MqttServiceBinder(MqttService mqttService) {
+		this.mMqttService = mqttService;
 	}
 
 	/**
 	 * @return a reference to the Service
 	 */
 	public MqttService getService() {
-		return mqttService;
+		return mMqttService;
 	}
 
 	void setActivityToken(String activityToken) {

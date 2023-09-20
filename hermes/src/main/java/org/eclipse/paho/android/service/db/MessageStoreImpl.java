@@ -46,19 +46,19 @@ public class MessageStoreImpl implements MessageStore {
 
     /**
      * 缓存服务端推送来的消息数据
-     * @param clientId 客户端ID
+     * @param clientKey 客户端主键
      * @param topic 主题
      * @param message 消息对象
      */
     @Override
-    public String saveMessage(String clientId, String topic, MqttMessage message) {
+    public String saveMessage(String clientKey, String topic, MqttMessage message) {
         //需要异步执行
-        Log.d(TAG, "{" + clientId + "} start save message {" + message.toString() + "}");
+        Log.d(TAG, "{" + clientKey + "} start save message {" + message.toString() + "}");
         SQLiteDatabase db = mqttDb.getWritableDatabase();
         ContentValues values = new ContentValues();
         String id = UUID.randomUUID().toString();
         values.put(MqttServiceConstants.DB_COLUMN_MESSAGE_ID, id);
-        values.put(MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE, clientId);
+        values.put(MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE, clientKey);
         values.put(MqttServiceConstants.DB_COLUMN_DESTINATION_NAME, topic);
         values.put(MqttServiceConstants.DB_COLUMN_PAYLOAD, message.getPayload());
         values.put(MqttServiceConstants.DB_COLUMN_QOS, message.getQos());
@@ -79,16 +79,16 @@ public class MessageStoreImpl implements MessageStore {
 
     /**
      * 删除已经被应用消费的缓存消息数据
-     * @param clientId 客户端ID
+     * @param clientKey 客户端主键
      */
     @Override
-    public boolean deleteArrivedMessage(String clientId, String messageId) {
-        Log.d(TAG, "{" + clientId + "} start delete {" + messageId + "}");
+    public boolean deleteArrivedMessage(String clientKey, String messageId) {
+        Log.d(TAG, "{" + clientKey + "} start delete {" + messageId + "}");
         SQLiteDatabase db = mqttDb.getWritableDatabase();
         int rows = 0;
         String[] selectionArgs = new String[2];
         selectionArgs[0] = messageId;
-        selectionArgs[1] = clientId;
+        selectionArgs[1] = clientKey;
 
         try {
             rows = db.delete(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, MqttServiceConstants.DB_COLUMN_MESSAGE_ID + "=? AND " + MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE + "=?", selectionArgs);
@@ -104,17 +104,17 @@ public class MessageStoreImpl implements MessageStore {
 
     /**
      * 获取本地缓存的所有消息数据
-     * @param clientId 客户端ID，如果为空，则返回所有客户端的数据
+     * @param clientKey 客户端主键，如果为空，则返回所有客户端的数据
      */
     @Override
-    public ArrayList<DbStoredData> getAllMessages(String clientId) {
-        Log.d(TAG, "{" + clientId + "} start query all message");
+    public ArrayList<DbStoredData> getAllMessages(String clientKey) {
+        Log.d(TAG, "{" + clientKey + "} start query all message");
         ArrayList<DbStoredData> list = new ArrayList<>();
         SQLiteDatabase db = mqttDb.getWritableDatabase();
-        String[] selectionArgs = {clientId};
+        String[] selectionArgs = {clientKey};
         Cursor c = null;
         try {
-            if (TextUtils.isEmpty(clientId)) {
+            if (TextUtils.isEmpty(clientKey)) {
                 c = db.query(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME,
                         null,
                         null,
@@ -167,19 +167,19 @@ public class MessageStoreImpl implements MessageStore {
 
     /**
      * 清空本地缓存的所有消息数据
-     * @param clientId 客户端ID，如果为空，则清空所有客户端的数据
+     * @param clientKey 客户端主键，如果为空，则清空所有客户端的数据
      */
     @Override
-    public void clearAllMessages(String clientId) {
-        Log.d(TAG, "{" + clientId + "} start clear all message");
+    public void clearAllMessages(String clientKey) {
+        Log.d(TAG, "{" + clientKey + "} start clear all message");
         SQLiteDatabase db = mqttDb.getWritableDatabase();
         int rows = 0;
         try {
-            if (TextUtils.isEmpty(clientId)) {
+            if (TextUtils.isEmpty(clientKey)) {
                 rows = db.delete(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, null, null);
             }else {
                 String[] selectionArgs = new String[1];
-                selectionArgs[0] = clientId;
+                selectionArgs[0] = clientKey;
                 rows = db.delete(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE + "=?", selectionArgs);
             }
 

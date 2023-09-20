@@ -10,16 +10,16 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 public class DbStoredData {
     /** 消息ID */
     public String messageId;
-    /** 客户端标识符 */
-    public String clientHandle;
+    /** 客户端主键 */
+    public String clientKey;
     /** 消息主题 */
     public String topic;
     /** 消息内容 */
     public MqttMessage message;
 
-    public DbStoredData(String messageId, String clientHandle, String topic, MqttMessage message) {
+    public DbStoredData(String messageId, String clientKey, String topic, MqttMessage message) {
         this.messageId = messageId;
-        this.clientHandle = clientHandle;
+        this.clientKey = clientKey;
         this.topic = topic;
         this.message = message;
     }

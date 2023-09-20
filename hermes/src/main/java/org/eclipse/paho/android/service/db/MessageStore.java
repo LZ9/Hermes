@@ -21,28 +21,28 @@ public interface MessageStore {
 
 	/**
 	 * 缓存到达的消息数据
-	 * @param clientId 客户端ID
+	 * @param clientKey 客户端主键
 	 * @param Topic 主题
 	 * @param message 消息
 	 */
-	String saveMessage(String clientId, String Topic, MqttMessage message);
+	String saveMessage(String clientKey, String Topic, MqttMessage message);
 
 	/**
 	 * 删除已经被应用消费的缓存消息数据
-	 * @param clientId 客户端ID
+	 * @param clientKey 客户端主键
 	 * @param messageId 消息ID
 	 */
-	boolean deleteArrivedMessage(String clientId, String messageId);
+	boolean deleteArrivedMessage(String clientKey, String messageId);
 
 	/**
 	 * 获取本地缓存的所有消息数据
-	 * @param clientId 客户端ID，如果为空，则返回所有客户端的数据
+	 * @param clientKey 客户端主键，如果为空，则返回所有客户端的数据
 	 */
-	ArrayList<DbStoredData> getAllMessages(String clientId);
+	ArrayList<DbStoredData> getAllMessages(String clientKey);
 
 	/**
 	 * 清空本地缓存的所有消息数据
-	 * @param clientId 客户端ID，如果为空，则清空所有客户端的数据
+	 * @param clientKey 客户端主键，如果为空，则清空所有客户端的数据
 	 */
-	void clearAllMessages(String clientId);
+	void clearAllMessages(String clientKey);
 }

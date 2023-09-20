@@ -220,7 +220,7 @@
 //    var messageStore: MessageStore? = null
 //
 //    // An intent receiver to deal with changes in network connectivity
-//    private var networkConnectionMonitor: NetworkConnectionIntentReceiver? = null
+//    private var networkConnectionMonitor: NetworkConnectionReceiver? = null
 //
 //    //a receiver to recognise when the user changes the "background data" preference and a flag to track that preference
 //    // Only really relevant below android version ICE_CREAM_SANDWICH - see android docs
@@ -643,7 +643,7 @@
 //
 //    private fun registerBroadcastReceivers() {
 //        if (networkConnectionMonitor == null) {
-//            networkConnectionMonitor = NetworkConnectionIntentReceiver()
+//            networkConnectionMonitor = NetworkConnectionReceiver()
 //            registerReceiver(networkConnectionMonitor, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION) )
 //        }
 //    }
@@ -659,7 +659,7 @@
 //    /** Called in response to a change in network connection - after losing a
 //     * connection to the server, this allows us to wait until we have a usable
 //     * data connection again */
-//    private inner class NetworkConnectionIntentReceiver : BroadcastReceiver() {
+//    private inner class NetworkConnectionReceiver : BroadcastReceiver() {
 //
 //        @SuppressLint("InvalidWakeLockTag", "WakelockTimeout")
 //        override fun onReceive(context: Context?, intent: Intent?) {

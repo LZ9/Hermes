@@ -118,11 +118,11 @@ class WebSocketActivity : BaseActivity() {
                         }
                     })
                     .setOnSubscribeListener(object :OnSubscribeListener{
-                        override fun onSubscribeSuccess(topic: String) {
+                        override fun onSubscribeSuccess(topic: Array<String>) {
                             logResult("订阅成功 : topic ---> $topic")
                         }
 
-                        override fun onSubscribeFailure(topic: String, cause: Throwable) {
+                        override fun onSubscribeFailure(topic: Array<String>, cause: Throwable) {
                             logResult("订阅失败 : topic ---> $topic   ${cause.message}")
                         }
 

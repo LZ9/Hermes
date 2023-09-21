@@ -789,141 +789,20 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
      */
     @Override
     public IMqttToken subscribe(String topic, int qos, Object userContext, IMqttActionListener callback) throws MqttException {
-        IMqttToken token = new MqttTokenAndroid(this, userContext, callback, new String[]{topic});
-        String activityToken = storeToken(token);
-        mqttService.subscribe(clientHandle, topic, qos, activityToken);
-        return token;
+        return subscribe(new String[]{topic}, new int[]{qos}, userContext, callback);
     }
 
-    /**
-     * Subscribes to multiple topics, each topic may include wildcards.
-     * <p>
-     * Provides an optimized way to subscribe to multiple topics compared to
-     * subscribing to each one individually.
-     * </p>
-     * <p>
-     * The {@link #setCallback(MqttCallback)} method should be called before
-     * this method, otherwise any received messages will be discarded.
-     * </p>
-     * <p>
-     * If (@link MqttConnectOptions#setCleanSession(boolean)} was set to true,
-     * when connecting to the server, the subscription remains in place until
-     * either:
-     * </p>
-     * <ul>
-     * <li>The client disconnects</li>
-     * <li>An unsubscribe method is called to unsubscribe the topic</li>
-     * </ul>
-     * <p>
-     * If (@link MqttConnectOptions#setCleanSession(boolean)} was set to false,
-     * when connecting to the server, the subscription remains in place
-     * until either:
-     * </p>
-     * <ul>
-     * <li>An unsubscribe method is called to unsubscribe the topic</li>
-     * <li>The next time the client connects with cleanSession set to true
-     * </ul>
-     * <p>With cleanSession set to false the MQTT server will store messages
-     * on behalf of the client when the client is not connected. The next time
-     * the client connects with the <b>same client ID</b> the server will
-     * deliver the stored messages to the client.
-     * </p>
-     *
-     * <p>
-     * The "topic filter" string is used when subscription may contain special
-     * characters, which allows you to subscribe to multiple topics at once.
-     * <dl>
-     * <dt>Topic level separator</dt>
-     * <dd>The forward slash (/) is used to separate each level within a topic
-     * tree and provide a hierarchical structure to the topic space. The use of
-     * the topic level separator is significant when the two wildcard characters
-     * are encountered in topics specified by subscribers.</dd>
-     *
-     * <dt>Multi-level wildcard</dt>
-     * <dd>
-     * <p>
-     * The number sign (#) is a wildcard character that matches any number of
-     * levels within a topic. For example, if you subscribe to <span><span
-     * class="filepath">finance/stock/ibm/#</span></span>, you receive messages
-     * on these topics:
-     * </p>
-     * <ul>
-     *     <li><pre>finance/stock/ibm</pre></li>
-     *     <li><pre>finance/stock/ibm/closingprice</pre></li>
-     *     <li><pre>finance/stock/ibm/currentprice</pre></li>
-     * </ul>
-     *
-     * <p>
-     * The multi-level wildcard can represent zero or more levels. Therefore,
-     * <em>finance/#</em> can also match the singular <em>finance</em>, where
-     * <em>#</em> represents zero levels. The topic level separator is
-     * meaningless in this context, because there are no levels to separate.
-     * </p>
-     *
-     * <p>
-     * The <span>multi-level</span> wildcard can be specified only on its own or
-     * next to the topic level separator character. Therefore, <em>#</em> and
-     * <em>finance/#</em> are both valid, but <em>finance#</em> is not valid.
-     * <span>The multi-level wildcard must be the last character used within the
-     * topic tree. For example, <em>finance/#</em> is valid but
-     * <em>finance/#/closingprice</em> is not valid.</span>
-     * </p>
-     * </dd>
-     *
-     * <dt>Single-level wildcard</dt>
-     * <dd>
-     * <p>
-     * The plus sign (+) is a wildcard character that matches only one topic
-     * level. For example, <em>finance/stock/+</em> matches
-     * <em>finance/stock/ibm</em> and <em>finance/stock/xyz</em>, but not
-     * <em>finance/stock/ibm/closingprice</em>. Also, because the single-level
-     * wildcard matches only a single level, <em>finance/+</em> does not match
-     * <em>finance</em>.
-     * </p>
-     *
-     * <p>
-     * Use the single-level wildcard at any level in the topic tree, and in
-     * conjunction with the multilevel wildcard. Specify the single-level
-     * wildcard next to the topic level separator, except when it is specified
-     * on its own. Therefore, <em>+</em> and <em>finance/+</em> are both valid,
-     * but <em>finance+</em> is not valid. <span>The single-level wildcard can
-     * be used at the end of the topic tree or within the topic tree. For
-     * example, <em>finance/+</em> and <em>finance/+/ibm</em> are both
-     * valid.</span>
-     * </p>
-     * </dd>
-     * </dl>
-     * <p>
-     * The method returns control before the subscribe completes. Completion can
-     * be tracked by:
-     * </p>
-     * <ul>
-     * <li>Waiting on the supplied token {@link MqttToken#waitForCompletion()}
-     * or</li>
-     * <li>Passing in a callback {@link IMqttActionListener} to this method</li>
-     * </ul>
-     *
-     * @param topic       one or more topics to subscribe to, which can include
-     *                    wildcards
-     * @param qos         the maximum quality of service to subscribe each topic
-     *                    at.Messages published at a lower quality of service will be
-     *                    received at the published QoS. Messages published at a higher
-     *                    quality of service will be received using the QoS specified on
-     *                    the subscription.
-     * @param userContext optional object used to pass context to the callback. Use null
-     *                    if not required.
-     * @param callback    optional listener that will be notified when subscribe has
-     *                    completed
-     * @return token used to track and wait for the subscribe to complete. The
-     * token will be passed to callback methods if set.
-     * @throws MqttException            if there was an error registering the subscription.
-     * @throws IllegalArgumentException if the two supplied arrays are not the same size.
-     */
+    public IMqttToken subscribe(String[] topic, Object userContext, IMqttActionListener callback) throws MqttException {
+        int[] qosArray = new int[topic.length];
+        for (int i = 0; i < topic.length; i++) {
+            qosArray[i] = 0;
+        }
+        return subscribe(topic, qosArray, userContext, callback);
+    }
+
     @Override
-    public IMqttToken subscribe(String[] topic, int[] qos, Object userContext,
-                                IMqttActionListener callback) throws MqttException {
-        IMqttToken token = new MqttTokenAndroid(this, userContext,
-                callback, topic);
+    public IMqttToken subscribe(String[] topic, int[] qos, Object userContext, IMqttActionListener callback) throws MqttException {
+        IMqttToken token = new MqttTokenAndroid(this, userContext, callback, topic);
         String activityToken = storeToken(token);
         mqttService.subscribe(clientHandle, topic, qos, activityToken);
         return token;

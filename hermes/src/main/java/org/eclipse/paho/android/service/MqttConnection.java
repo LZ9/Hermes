@@ -548,8 +548,7 @@ public class MqttConnection implements MqttCallbackExtended {
 	 *            the message itself
 	 */
 	@Override
-	public void messageArrived(String topic, MqttMessage message)
-			throws Exception {
+	public void messageArrived(String topic, MqttMessage message) throws Exception {
 
 		Log.d(TAG, "messageArrived(" + topic + ",{" + message.toString() + "})");
 

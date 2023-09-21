@@ -207,24 +207,22 @@ class HermesImpl : Hermes {
             return
         }
         try {
-            list.forEach { topic ->
-                mMqttClient?.subscribe(topic, 0, null, object : IMqttActionListener {
-                    override fun onSuccess(asyncActionToken: IMqttToken?) {
-                        HermesLog.v(mTag, "$topic 订阅成功")
-                        MainScope().launch { mOnSubscribeListener?.onSubscribeSuccess(topic) }
-                    }
+            mMqttClient?.subscribe(list.toTypedArray(), null, object : IMqttActionListener {
+                override fun onSuccess(asyncActionToken: IMqttToken) {
+                    HermesLog.v(mTag, "${asyncActionToken.topics} 订阅成功")
+                    MainScope().launch { mOnSubscribeListener?.onSubscribeSuccess(asyncActionToken.topics) }
+                }
 
-                    override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                        val defException = exception ?: RuntimeException("mqtt subscribe failure")
-                        HermesLog.e(mTag, "$topic 订阅失败 : ${defException.cause}")
-                        MainScope().launch { mOnSubscribeListener?.onSubscribeFailure(topic, defException) }
-                    }
-                })
-            }
+                override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable?) {
+                    val defException = exception ?: RuntimeException("mqtt subscribe failure")
+                    HermesLog.e(mTag, "${asyncActionToken.topics} 订阅失败 : ${defException.cause}")
+                    MainScope().launch { mOnSubscribeListener?.onSubscribeFailure(asyncActionToken.topics, defException) }
+                }
+            })
         } catch (e: Exception) {
             e.printStackTrace()
             HermesLog.e(mTag, "订阅失败 : ${e.cause}")
-            MainScope().launch { mOnSubscribeListener?.onSubscribeFailure("all", e) }
+            MainScope().launch { mOnSubscribeListener?.onSubscribeFailure(arrayOf("all"), e) }
         }
     }
 

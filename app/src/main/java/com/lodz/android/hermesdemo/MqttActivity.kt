@@ -30,7 +30,7 @@ class MqttActivity : BaseActivity(){
         private const val DEFAULT_CLIENT_ID = "12345"
 
         /** 默认订阅主题 */
-        private const val DEFAULT_SUB_TOPIC = "test.topic"
+        private const val DEFAULT_SUB_TOPIC = "test.topic,test.token"
 
         /** 默认发送主题 */
         private const val DEFAULT_SEND_TOPIC = "test.client"
@@ -239,12 +239,12 @@ class MqttActivity : BaseActivity(){
                 }
             })
             .setOnSubscribeListener(object : OnSubscribeListener {
-                override fun onSubscribeSuccess(topic: String) {
+                override fun onSubscribeSuccess(topic: Array<String>) {
                     logResult("订阅成功 : topic ---> $topic")
                     logResult("当前订阅列表 : ${mHermes?.getSubscribeTopic()}")
                 }
 
-                override fun onSubscribeFailure(topic: String, cause: Throwable) {
+                override fun onSubscribeFailure(topic: Array<String>, cause: Throwable) {
                     logResult("订阅失败 : topic ---> $topic   ${cause.message}")
                 }
 

@@ -14,39 +14,19 @@ package org.eclipse.paho.android.service;
 
 import android.os.Binder;
 
-/**
- * What the Service passes to the Activity on binding:-
- * <ul>
- * <li>a reference to the Service
- * <li>the activityToken provided when the Service was started
- * </ul>
- * 
- */
 public class MqttServiceBinder extends Binder {
 
 	private final MqttService mMqttService;
-	private String activityToken;
 
 	public MqttServiceBinder(MqttService mqttService) {
 		this.mMqttService = mqttService;
 	}
 
 	/**
-	 * @return a reference to the Service
+	 * 获取mqtt服务对象
 	 */
 	public MqttService getService() {
 		return mMqttService;
-	}
-
-	void setActivityToken(String activityToken) {
-		this.activityToken = activityToken;
-	}
-
-	/**
-	 * @return the activityToken provided when the Service was started
-	 */
-	public String getActivityToken() {
-		return activityToken;
 	}
 
 }

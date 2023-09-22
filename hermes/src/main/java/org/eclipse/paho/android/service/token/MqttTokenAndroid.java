@@ -21,10 +21,7 @@ import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.internal.wire.MqttWireMessage;
 
-/**
- * <p>
- * Implementation of the IMqttToken interface for use from within the MqttAndroidClient implementation
- */
+/** IMqttToken接口的实现和包装类 */
 
 public class MqttTokenAndroid implements IMqttToken {
 

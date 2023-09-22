@@ -451,9 +451,7 @@ public class MqttConnection implements MqttCallbackExtended {
 	}
 
 	/**
-	 * Get tokens for all outstanding deliveries for a client
-	 * 
-	 * @return an array (possibly empty) of tokens
+	 * 获取IMqttDeliveryToken数组
 	 */
 	public IMqttDeliveryToken[] getPendingDeliveryTokens() {
 		return mClient.getPendingDeliveryTokens();

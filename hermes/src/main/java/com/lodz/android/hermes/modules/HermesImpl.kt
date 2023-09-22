@@ -207,7 +207,7 @@ class HermesImpl : Hermes {
             return
         }
         try {
-            mMqttClient?.subscribe(list.toTypedArray(), null, object : IMqttActionListener {
+            mMqttClient?.subscribe(list.toTypedArray(), object : IMqttActionListener {
                 override fun onSuccess(asyncActionToken: IMqttToken) {
                     HermesLog.v(mTag, "${asyncActionToken.topics} 订阅成功")
                     MainScope().launch { mOnSubscribeListener?.onSubscribeSuccess(asyncActionToken.topics) }

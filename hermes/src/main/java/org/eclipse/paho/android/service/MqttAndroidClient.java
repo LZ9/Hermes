@@ -92,7 +92,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
      * 客户端主键
      */
     @NonNull
-    private String mClientKey;
+    private String mClientKey = "";
 
     @NonNull
     private Context mContext;
@@ -257,11 +257,9 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
             return token;
         }
 
-        // We bind with BIND_SERVICE_FLAG (0), leaving us the manage the lifecycle until the last time it is stopped by a call to stopService()
         mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
         return token;
     }
-
 
     /**
      * 绑定服务
@@ -312,9 +310,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
         }
     }
 
-    /**
-     * Actually do the mqtt connect operation
-     */
+    /** 执行连接操作 */
     private void doConnect() {
         if (!isRegisteredEvent){
             registerReceiver(this);
@@ -335,122 +331,40 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Disconnects from the server.
-     * <p>
-     * An attempt is made to quiesce the client allowing outstanding work to
-     * complete before disconnecting. It will wait for a maximum of 30 seconds
-     * for work to quiesce before disconnecting. This method must not be called
-     * from inside {@link MqttCallback} methods.
-     * </p>
-     *
-     * @return token used to track and wait for disconnect to complete. The
-     * token will be passed to any callback that has been set.
-     * @throws MqttException for problems encountered while disconnecting
-     * @see #disconnect(long, Object, IMqttActionListener)
+     * 与服务器断开连接
      */
     @Override
-    public IMqttToken disconnect() throws MqttException {
-        IMqttToken token = new MqttTokenAndroid(this, null, null);
-        String activityToken = storeToken(token);
-        mMqttService.disconnect(mClientKey, activityToken);
-        return token;
+    public IMqttToken disconnect()  {
+        return disconnect(-1, null, null);
     }
 
     /**
-     * Disconnects from the server.
-     * <p>
-     * An attempt is made to quiesce the client allowing outstanding work to
-     * complete before disconnecting. It will wait for a maximum of the
-     * specified quiesce time for work to complete before disconnecting. This
-     * method must not be called from inside {@link MqttCallback} methods.
-     * </p>
-     *
-     * @param quiesceTimeout the amount of time in milliseconds to allow for existing work
-     *                       to finish before disconnecting. A value of zero or less means
-     *                       the client will not quiesce.
-     * @return token used to track and wait for disconnect to complete. The
-     * token will be passed to the callback methods if a callback is
-     * set.
-     * @throws MqttException for problems encountered while disconnecting
-     * @see #disconnect(long, Object, IMqttActionListener)
+     * 与服务器断开连接
+     * @param quiesceTimeout 在断开连接之前允许完成现有工作的时间（以毫秒为单位）。 值为零或更低意味着客户端不会停顿。
      */
     @Override
-    public IMqttToken disconnect(long quiesceTimeout) throws MqttException {
-        IMqttToken token = new MqttTokenAndroid(this, null, null);
-        String activityToken = storeToken(token);
-        mMqttService.disconnect(mClientKey, quiesceTimeout, activityToken);
-        return token;
+    public IMqttToken disconnect(long quiesceTimeout){
+        return disconnect(quiesceTimeout, null ,null);
     }
 
     /**
-     * Disconnects from the server.
-     * <p>
-     * An attempt is made to quiesce the client allowing outstanding work to
-     * complete before disconnecting. It will wait for a maximum of 30 seconds
-     * for work to quiesce before disconnecting. This method must not be called
-     * from inside {@link MqttCallback} methods.
-     * </p>
-     *
-     * @param userContext optional object used to pass context to the callback. Use null
-     *                    if not required.
-     * @param callback    optional listener that will be notified when the disconnect
-     *                    completes. Use null if not required.
-     * @return token used to track and wait for the disconnect to complete. The
-     * token will be passed to any callback that has been set.
-     * @throws MqttException for problems encountered while disconnecting
-     * @see #disconnect(long, Object, IMqttActionListener)
+     * 与服务器断开连接
+     * @param userContext 需要传递的数据（可选）
+     * @param callback    接口回调
      */
     @Override
-    public IMqttToken disconnect(Object userContext,
-                                 IMqttActionListener callback) throws MqttException {
-        IMqttToken token = new MqttTokenAndroid(this, userContext,
-                callback);
-        String activityToken = storeToken(token);
-        mMqttService.disconnect(mClientKey, activityToken);
-        return token;
+    public IMqttToken disconnect(Object userContext, IMqttActionListener callback) {
+        return disconnect(-1, userContext, callback);
     }
 
     /**
-     * Disconnects from the server.
-     * <p>
-     * The client will wait for {@link MqttCallback} methods to complete. It
-     * will then wait for up to the quiesce timeout to allow for work which has
-     * already been initiated to complete. For instance when a QoS 2 message has
-     * started flowing to the server but the QoS 2 flow has not completed.It
-     * prevents new messages being accepted and does not send any messages that
-     * have been accepted but not yet started delivery across the network to the
-     * server. When work has completed or after the quiesce timeout, the client
-     * will disconnect from the server. If the cleanSession flag was set to
-     * false and next time it is also set to false in the connection, the
-     * messages made in QoS 1 or 2 which were not previously delivered will be
-     * delivered this time.
-     * </p>
-     * <p>
-     * This method must not be called from inside {@link MqttCallback} methods.
-     * </p>
-     * <p>
-     * The method returns control before the disconnect completes. Completion
-     * can be tracked by:
-     * </p>
-     * <ul>
-     * <li>Waiting on the returned token {@link IMqttToken#waitForCompletion()}
-     * or</li>
-     * <li>Passing in a callback {@link IMqttActionListener}</li>
-     * </ul>
-     *
-     * @param quiesceTimeout the amount of time in milliseconds to allow for existing work
-     *                       to finish before disconnecting. A value of zero or less means
-     *                       the client will not quiesce.
-     * @param userContext    optional object used to pass context to the callback. Use null
-     *                       if not required.
-     * @param callback       optional listener that will be notified when the disconnect
-     *                       completes. Use null if not required.
-     * @return token used to track and wait for the disconnect to complete. The
-     * token will be passed to any callback that has been set.
-     * @throws MqttException for problems encountered while disconnecting
+     * 与服务器断开连接
+     * @param quiesceTimeout 在断开连接之前允许完成现有工作的时间（以毫秒为单位）。 值为零或更低意味着客户端不会停顿。
+     * @param userContext 需要传递的数据（可选）
+     * @param callback    接口回调
      */
     @Override
-    public IMqttToken disconnect(long quiesceTimeout, Object userContext, IMqttActionListener callback) throws MqttException {
+    public IMqttToken disconnect(long quiesceTimeout,@Nullable Object userContext,@Nullable IMqttActionListener callback)  {
         IMqttToken token = new MqttTokenAndroid(this, userContext, callback);
         String activityToken = storeToken(token);
         mMqttService.disconnect(mClientKey, quiesceTimeout, activityToken);
@@ -686,15 +600,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * <p>
-     * Process incoming Intent objects representing the results of operations
-     * and asynchronous activities such as message received
-     * </p>
-     * <p>
-     * <strong>Note:</strong> This is only a public method because the Android
-     * APIs require such.<br>
-     * This method should not be explicitly invoked.
-     * </p>
+     * 广播接收
      */
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -740,26 +646,18 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Acknowledges a message received on the
-     * {@link MqttCallback#messageArrived(String, MqttMessage)}
-     *
-     * @param messageId the messageId received from the MqttMessage (To access this
-     *                  field you need to cast {@link MqttMessage} to
-     *                  {@link ParcelableMqttMessage})
-     * @return whether or not the message was successfully acknowledged
+     * 手动确认消息到达
      */
     public boolean acknowledgeMessage(String messageId) {
-        if (messageAck == Ack.MANUAL_ACK) {
-            return mMqttService.acknowledgeMessageArrival(mClientKey, messageId);
-        }
-        return false;
-
+        return messageAck == Ack.MANUAL_ACK && mMqttService.acknowledgeMessageArrival(mClientKey, messageId);
     }
 
-    public void messageArrivedComplete(int messageId, int qos) throws MqttException {
+    @Override
+    public void messageArrivedComplete(int messageId, int qos) {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public void setManualAcks(boolean manualAcks) {
         throw new UnsupportedOperationException();
     }
@@ -772,10 +670,28 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     private void connectAction(Bundle data) {
         IMqttToken token = connectToken;
         removeMqttToken(data);
-
         simpleAction(token, data);
     }
 
+    /**
+     * Common processing for many notifications
+     *
+     * @param token the token associated with the action being undertake
+     * @param data  the result data
+     */
+    private void simpleAction(IMqttToken token, Bundle data) {
+        if (token != null) {
+            Status status = (Status) data.getSerializable(MqttServiceConstants.CALLBACK_STATUS);
+            if (status == Status.OK) {
+                ((MqttTokenAndroid) token).notifyComplete();
+            } else {
+                Exception exceptionThrown = (Exception) data.getSerializable(MqttServiceConstants.CALLBACK_EXCEPTION);
+                ((MqttTokenAndroid) token).notifyFailure(exceptionThrown);
+            }
+        } else {
+            Log.e(MqttService.TAG, "simpleAction : token is null");
+        }
+    }
 
     /**
      * Process a notification that we have disconnected
@@ -816,25 +732,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
 
     }
 
-    /**
-     * Common processing for many notifications
-     *
-     * @param token the token associated with the action being undertake
-     * @param data  the result data
-     */
-    private void simpleAction(IMqttToken token, Bundle data) {
-        if (token != null) {
-            Status status = (Status) data.getSerializable(MqttServiceConstants.CALLBACK_STATUS);
-            if (status == Status.OK) {
-                ((MqttTokenAndroid) token).notifyComplete();
-            } else {
-                Exception exceptionThrown = (Exception) data.getSerializable(MqttServiceConstants.CALLBACK_EXCEPTION);
-                ((MqttTokenAndroid) token).notifyFailure(exceptionThrown);
-            }
-        } else {
-            Log.e(MqttService.TAG, "simpleAction : token is null");
-        }
-    }
+
 
     /**
      * Process notification of a publish(send) operation

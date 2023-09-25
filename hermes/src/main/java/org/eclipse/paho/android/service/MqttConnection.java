@@ -319,7 +319,7 @@ public class MqttConnection implements MqttCallbackExtended {
 
 	/**
 	 * 断开连接
-	 * @param quiesceTimeout 超时时间（毫秒）
+	 * @param quiesceTimeout 在断开连接之前允许完成现有工作的时间（以毫秒为单位）。 值为零或更低意味着客户端不会停顿。
 	 * @param activityToken 票据
 	 */
 	public void disconnect(long quiesceTimeout, @NonNull String activityToken) {

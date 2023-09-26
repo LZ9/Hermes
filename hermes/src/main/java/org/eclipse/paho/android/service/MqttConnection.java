@@ -172,7 +172,6 @@ public class MqttConnection implements MqttCallbackExtended {
 						return;
 					}
 				}
-				// use that to setup MQTT client persistence storage
 				mPersistence = new MqttDefaultFilePersistence(myDir.getAbsolutePath());
 			}
 
@@ -238,8 +237,7 @@ public class MqttConnection implements MqttCallbackExtended {
 	@Override
 	public void connectComplete(boolean reconnect, String serverURI) {
 		Bundle resultBundle = new Bundle();
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION,
-				MqttServiceConstants.CONNECT_EXTENDED_ACTION);
+		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.CONNECT_EXTENDED_ACTION);
 		resultBundle.putBoolean(MqttServiceConstants.CALLBACK_RECONNECT, reconnect);
 		resultBundle.putString(MqttServiceConstants.CALLBACK_SERVER_URI, serverURI);
 		mService.sendBroadcastToClient(mClientKey, Status.OK, resultBundle);
@@ -460,7 +458,7 @@ public class MqttConnection implements MqttCallbackExtended {
 	// Implement MqttCallback
 	/**
 	 * Callback for connectionLost
-	 * 
+	 *
 	 * @param why
 	 *            the exeception causing the break in communications
 	 */
@@ -508,7 +506,7 @@ public class MqttConnection implements MqttCallbackExtended {
 	/**
 	 * Callback to indicate a message has been delivered (the exact meaning of
 	 * "has been delivered" is dependent on the QOS value)
-	 * 
+	 *
 	 * @param messageToken
 	 *            the messge token provided when the message was originally sent
 	 */
@@ -539,7 +537,7 @@ public class MqttConnection implements MqttCallbackExtended {
 
 	/**
 	 * Callback when a message is received
-	 * 
+	 *
 	 * @param topic
 	 *            the topic on which the message was received
 	 * @param message
@@ -551,12 +549,12 @@ public class MqttConnection implements MqttCallbackExtended {
 		Log.d(TAG, "messageArrived(" + topic + ",{" + message.toString() + "})");
 
 		String messageId = mService.mMessageStore.saveMessage(mClientKey, topic, message);
-	
+
 		Bundle resultBundle = messageToBundle(messageId, topic, message);
 		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.MESSAGE_ARRIVED_ACTION);
 		resultBundle.putString(MqttServiceConstants.CALLBACK_MESSAGE_ID, messageId);
 		mService.sendBroadcastToClient(mClientKey, Status.OK, resultBundle);
-				
+
 	}
 
 

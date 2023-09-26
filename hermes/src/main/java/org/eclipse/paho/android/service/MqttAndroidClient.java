@@ -64,7 +64,6 @@ import java.security.cert.CertificateException;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 /**
@@ -628,8 +627,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
             sendAction(data);
         } else if (MqttServiceConstants.MESSAGE_DELIVERED_ACTION.equals(action)) {
             messageDeliveredAction(data);
-        } else if (MqttServiceConstants.ON_CONNECTION_LOST_ACTION
-                .equals(action)) {
+        } else if (MqttServiceConstants.ON_CONNECTION_LOST_ACTION.equals(action)) {
             connectionLostAction(data);
         } else if (MqttServiceConstants.DISCONNECT_ACTION.equals(action)) {
             disconnected(data);
@@ -640,7 +638,7 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onActivityFinishEvent(ConnectionEvent event) {
+    public void onConnectionEvent(ConnectionEvent event) {
         // TODO: 2023/9/21 替换onReceive
 
     }
@@ -663,9 +661,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Process the results of a connection
-     *
-     * @param data
+     * 处理连接结果
+     * @param data 回调数据
      */
     private void connectAction(Bundle data) {
         IMqttToken token = connectToken;
@@ -674,32 +671,30 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Common processing for many notifications
-     *
-     * @param token the token associated with the action being undertake
-     * @param data  the result data
+     * 回调的通用处理
+     * @param token 正在执行操作的令牌
+     * @param data  回调数据
      */
     private void simpleAction(IMqttToken token, Bundle data) {
-        if (token != null) {
-            Status status = (Status) data.getSerializable(MqttServiceConstants.CALLBACK_STATUS);
-            if (status == Status.OK) {
-                ((MqttTokenAndroid) token).notifyComplete();
-            } else {
-                Exception exceptionThrown = (Exception) data.getSerializable(MqttServiceConstants.CALLBACK_EXCEPTION);
-                ((MqttTokenAndroid) token).notifyFailure(exceptionThrown);
-            }
-        } else {
+        if (token == null){
             Log.e(MqttService.TAG, "simpleAction : token is null");
+            return;
+        }
+        Status status = (Status) data.getSerializable(MqttServiceConstants.CALLBACK_STATUS);
+        if (status == Status.OK) {
+            ((MqttTokenAndroid) token).notifyComplete();
+        } else {
+            Exception exceptionThrown = (Exception) data.getSerializable(MqttServiceConstants.CALLBACK_EXCEPTION);
+            ((MqttTokenAndroid) token).notifyFailure(exceptionThrown);
         }
     }
 
     /**
-     * Process a notification that we have disconnected
-     *
-     * @param data
+     * 处理断开连接结果
+     * @param data 回调数据
      */
     private void disconnected(Bundle data) {
-        mClientKey = ""; // avoid reuse!
+        mClientKey = "";
         IMqttToken token = removeMqttToken(data);
         if (token != null) {
             ((MqttTokenAndroid) token).notifyComplete();
@@ -710,9 +705,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Process a Connection Lost notification
-     *
-     * @param data
+     * 处理连接丢失结果
+     * @param data 回调数据
      */
     private void connectionLostAction(Bundle data) {
         if (callback != null) {
@@ -721,23 +715,24 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
         }
     }
 
+    /**
+     * 处理连接完成
+     * @param data 回调数据
+     */
     private void connectExtendedAction(Bundle data) {
         // This is called differently from a normal connect
-
         if (callback instanceof MqttCallbackExtended) {
             boolean reconnect = data.getBoolean(MqttServiceConstants.CALLBACK_RECONNECT, false);
             String serverURI = data.getString(MqttServiceConstants.CALLBACK_SERVER_URI);
             ((MqttCallbackExtended) callback).connectComplete(reconnect, serverURI);
         }
-
     }
 
 
 
     /**
-     * Process notification of a publish(send) operation
-     *
-     * @param data
+     * 处理发送消息结果
+     * @param data 回调数据
      */
     private void sendAction(Bundle data) {
         IMqttToken token = getMqttToken(data); // get, don't remove - will
@@ -746,9 +741,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Process notification of a subscribe operation
-     *
-     * @param data
+     * 处理订阅主题结果
+     * @param data 回调数据
      */
     private void subscribeAction(Bundle data) {
         IMqttToken token = removeMqttToken(data);
@@ -756,9 +750,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Process notification of an unsubscribe operation
-     *
-     * @param data
+     * 处理取消订阅主题结果
+     * @param data 回调数据
      */
     private void unSubscribeAction(Bundle data) {
         IMqttToken token = removeMqttToken(data);
@@ -766,9 +759,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Process notification of a published message having been delivered
-     *
-     * @param data
+     * 处理已发布消息已送达的结果
+     * @param data 回调数据
      */
     private void messageDeliveredAction(Bundle data) {
         IMqttToken token = removeMqttToken(data);
@@ -783,9 +775,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Process notification of a message's arrival
-     *
-     * @param data
+     * 处理消息送达结果
+     * @param data 回调数据
      */
     private void messageArrivedAction(Bundle data) {
         if (callback != null) {
@@ -810,9 +801,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * @param token identifying an operation
-     * @return an identifier for the token which can be passed to the Android
-     * Service
+     * 保存票据
+     * @param token 票据
      */
     private synchronized String storeToken(IMqttToken token) {
         tokenMap.put(tokenNumber, token);
@@ -820,10 +810,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Get a token identified by a string, and remove it from our map
-     *
-     * @param data
-     * @return the token
+     * 删除票据
+     * @param data 回调数据
      */
     private synchronized IMqttToken removeMqttToken(Bundle data) {
         String activityToken = data.getString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN);
@@ -837,10 +825,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Get a token identified by a string, and remove it from our map
-     *
-     * @param data
-     * @return the token
+     * 获取票据
+     * @param data 回调数据
      */
     private synchronized IMqttToken getMqttToken(Bundle data) {
         String activityToken = data.getString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN);
@@ -848,84 +834,73 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     /**
-     * Sets the DisconnectedBufferOptions for this client
-     *
-     * @param bufferOpts the DisconnectedBufferOptions
+     * 设置断连缓冲配置项
+     * @param bufferOpts 断连缓冲配置项
      */
     public void setBufferOpts(DisconnectedBufferOptions bufferOpts) {
         mMqttService.setBufferOpts(mClientKey, bufferOpts);
     }
 
+    /**
+     * 获取断连缓冲配置项
+     */
     public int getBufferedMessageCount() {
         return mMqttService.getBufferedMessageCount(mClientKey);
     }
 
+    /**
+     * 获取消息
+     * @param bufferIndex 索引
+     */
     public MqttMessage getBufferedMessage(int bufferIndex) {
         return mMqttService.getBufferedMessage(mClientKey, bufferIndex);
     }
 
+    /**
+     * 删除消息
+     * @param bufferIndex 索引
+     */
     public void deleteBufferedMessage(int bufferIndex) {
         mMqttService.deleteBufferedMessage(mClientKey, bufferIndex);
     }
 
     /**
-     * Get the SSLSocketFactory using SSL key store and password
-     * <p>
-     * A convenience method, which will help user to create a SSLSocketFactory
-     * object
-     * </p>
-     *
-     * @param keyStore the SSL key store which is generated by some SSL key tool,
-     *                 such as keytool in Java JDK
-     * @param password the password of the key store which is set when the key store
-     *                 is generated
-     * @return SSLSocketFactory used to connect to the server with SSL
-     * authentication
-     * @throws MqttSecurityException if there was any error when getting the SSLSocketFactory
+     * 获取SSLSocketFactory
+     * @param keyStore SSL密钥
+     * @param password 密码
      */
     public SSLSocketFactory getSSLSocketFactory(InputStream keyStore, String password) throws MqttSecurityException {
         try {
-            SSLContext ctx = null;
-            SSLSocketFactory sslSockFactory = null;
-            KeyStore ts;
-            ts = KeyStore.getInstance("BKS");
+            KeyStore ts = KeyStore.getInstance("BKS");
             ts.load(keyStore, password.toCharArray());
             TrustManagerFactory tmf = TrustManagerFactory.getInstance("X509");
             tmf.init(ts);
-            TrustManager[] tm = tmf.getTrustManagers();
-            ctx = SSLContext.getInstance("TLSv1");
-            ctx.init(null, tm, null);
+            SSLContext ctx = SSLContext.getInstance("TLSv1");
+            ctx.init(null, tmf.getTrustManagers(), null);
+            return ctx.getSocketFactory();
 
-            sslSockFactory = ctx.getSocketFactory();
-            return sslSockFactory;
-
-        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException |
-                 KeyManagementException e) {
+        } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException | KeyManagementException e) {
             throw new MqttSecurityException(e);
         }
     }
 
     @Override
-    public void disconnectForcibly() throws MqttException {
+    public void disconnectForcibly() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void disconnectForcibly(long disconnectTimeout) throws MqttException {
+    public void disconnectForcibly(long disconnectTimeout)  {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void disconnectForcibly(long quiesceTimeout, long disconnectTimeout)
-            throws MqttException {
+    public void disconnectForcibly(long quiesceTimeout, long disconnectTimeout)  {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Unregister receiver which receives intent from MqttService avoids IntentReceiver leaks.
-     */
     public void unregisterResources() {
-        if (mContext != null && isRegisteredEvent) {
+        if (isRegisteredEvent) {
             synchronized (MqttAndroidClient.this) {
                 LocalBroadcastManager.getInstance(mContext).unregisterReceiver(this);
                 isRegisteredEvent = false;
@@ -941,11 +916,6 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
         }
     }
 
-    /**
-     * Register receiver to receiver intent from MqttService. Call this method when activity is hidden and become to show again.
-     *
-     * @param context - Current activity context.
-     */
     public void registerResources(Context context) {
         if (context != null) {
             this.mContext = context;
@@ -956,13 +926,14 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
     }
 
     @Override
-    public boolean removeMessage(IMqttDeliveryToken token) throws MqttException {
+    public boolean removeMessage(IMqttDeliveryToken token) {
+
         return false;
     }
 
     @Override
     public void reconnect() throws MqttException {
-
+        connect();
     }
 
     @Override

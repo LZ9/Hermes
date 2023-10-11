@@ -366,7 +366,7 @@ public class MqttService extends Service {
      */
     public boolean acknowledgeMessageArrival(String clientKey, String messageId) {
         MqttClient client = getClient(clientKey);
-        if (client != null && client.getAckType() == Ack.MANUAL_ACK){
+        if (client != null && client.getAckType() == Ack.AUTO_ACK){
             return mMessageStore.deleteArrivedMessage(clientKey, messageId);
         }
         return false;

@@ -1,7 +1,6 @@
-package com.lodz.android.hermes.modules
+package com.lodz.android.hermes.ws.server
 
 import android.util.Log
-import com.lodz.android.hermes.contract.OnWebSocketServerListener
 import kotlinx.coroutines.*
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake

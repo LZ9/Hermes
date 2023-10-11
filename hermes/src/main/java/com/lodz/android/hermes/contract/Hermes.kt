@@ -1,6 +1,10 @@
 package com.lodz.android.hermes.contract
 
 import android.content.Context
+import com.lodz.android.hermes.mqtt.OnConnectListener
+import com.lodz.android.hermes.mqtt.OnSendListener
+import com.lodz.android.hermes.mqtt.OnSubscribeListener
+import com.lodz.android.hermes.mqtt.OnUnsubscribeListener
 import org.eclipse.paho.android.service.contract.ServiceStartActionListener
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import java.nio.ByteBuffer

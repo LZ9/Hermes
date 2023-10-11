@@ -1,6 +1,5 @@
-package com.lodz.android.hermes.modules
+package com.lodz.android.hermes.ws.client
 
-import com.lodz.android.hermes.contract.OnWebSocketListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch

@@ -8,9 +8,9 @@ import com.lodz.android.corekt.anko.*
 import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.corekt.utils.StatusBarUtil
 import com.lodz.android.hermes.contract.Hermes
-import com.lodz.android.hermes.contract.OnConnectListener
-import com.lodz.android.hermes.contract.OnSendListener
-import com.lodz.android.hermes.contract.OnSubscribeListener
+import com.lodz.android.hermes.mqtt.OnConnectListener
+import com.lodz.android.hermes.mqtt.OnSendListener
+import com.lodz.android.hermes.mqtt.OnSubscribeListener
 import com.lodz.android.hermes.modules.HermesAgent
 import com.lodz.android.hermesdemo.databinding.ActivityWsBinding
 import com.lodz.android.pandora.base.activity.BaseActivity

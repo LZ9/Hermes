@@ -8,11 +8,14 @@ import com.lodz.android.corekt.anko.*
 import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.hermes.contract.*
 import com.lodz.android.hermes.modules.HermesAgent
+import com.lodz.android.hermes.mqtt.OnConnectListener
+import com.lodz.android.hermes.mqtt.OnSendListener
+import com.lodz.android.hermes.mqtt.OnSubscribeListener
+import com.lodz.android.hermes.mqtt.OnUnsubscribeListener
 import com.lodz.android.hermesdemo.databinding.ActivityMqttBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout
-import org.eclipse.paho.client.mqttv3.MqttMessage
 import java.nio.ByteBuffer
 
 /**

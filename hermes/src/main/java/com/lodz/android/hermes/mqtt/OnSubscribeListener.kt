@@ -1,4 +1,4 @@
-package com.lodz.android.hermes.contract
+package com.lodz.android.hermes.mqtt
 
 /**
  * 推送接口回调

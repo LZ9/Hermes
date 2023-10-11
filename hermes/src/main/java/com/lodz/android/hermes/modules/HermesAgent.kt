@@ -3,6 +3,12 @@ package com.lodz.android.hermes.modules
 import android.content.Context
 import androidx.annotation.IntDef
 import com.lodz.android.hermes.contract.*
+import com.lodz.android.hermes.mqtt.MqttImpl
+import com.lodz.android.hermes.mqtt.OnConnectListener
+import com.lodz.android.hermes.mqtt.OnSendListener
+import com.lodz.android.hermes.mqtt.OnSubscribeListener
+import com.lodz.android.hermes.mqtt.OnUnsubscribeListener
+import com.lodz.android.hermes.ws.client.WebSocketImpl
 import org.eclipse.paho.android.service.contract.ServiceStartActionListener
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 
@@ -129,7 +135,7 @@ class HermesAgent private constructor() {
             throw NullPointerException("push clientId is null")
         }
         val client = when (mType) {
-            MQTT -> HermesImpl()
+            MQTT -> MqttImpl()
             WEB_SOCKET -> WebSocketImpl()
             else -> null
         } ?: throw NullPointerException("unsupport connect type")

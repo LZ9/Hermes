@@ -1,4 +1,4 @@
-package com.lodz.android.hermes.contract
+package com.lodz.android.hermes.mqtt
 
 import java.nio.ByteBuffer
 

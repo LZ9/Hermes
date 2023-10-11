@@ -1,7 +1,12 @@
-package com.lodz.android.hermes.modules
+package com.lodz.android.hermes.ws.client
 
 import android.content.Context
 import com.lodz.android.hermes.contract.*
+import com.lodz.android.hermes.modules.HermesLog
+import com.lodz.android.hermes.mqtt.OnConnectListener
+import com.lodz.android.hermes.mqtt.OnSendListener
+import com.lodz.android.hermes.mqtt.OnSubscribeListener
+import com.lodz.android.hermes.mqtt.OnUnsubscribeListener
 import kotlinx.coroutines.*
 import org.eclipse.paho.android.service.contract.ServiceStartActionListener
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions

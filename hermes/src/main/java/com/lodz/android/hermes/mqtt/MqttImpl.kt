@@ -1,7 +1,8 @@
-package com.lodz.android.hermes.modules
+package com.lodz.android.hermes.mqtt
 
 import android.content.Context
 import com.lodz.android.hermes.contract.*
+import com.lodz.android.hermes.modules.HermesLog
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import org.eclipse.paho.android.service.MqttAndroidClient
@@ -22,7 +23,7 @@ import java.util.LinkedHashSet
  * @author zhouL
  * @date 2019/12/21
  */
-class HermesImpl : Hermes {
+class MqttImpl : Hermes {
 
     /** 日志标签 */
     private var mTag = "HermesLog"

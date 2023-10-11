@@ -1,4 +1,4 @@
-package com.lodz.android.hermes.contract
+package com.lodz.android.hermes.ws.server
 
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake

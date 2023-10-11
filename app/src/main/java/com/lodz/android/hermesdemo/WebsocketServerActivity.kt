@@ -10,8 +10,8 @@ import com.lodz.android.corekt.anko.getColorCompat
 import com.lodz.android.corekt.anko.getIpv4List
 import com.lodz.android.corekt.anko.toastShort
 import com.lodz.android.corekt.utils.StatusBarUtil
-import com.lodz.android.hermes.contract.OnWebSocketServerListener
-import com.lodz.android.hermes.modules.BaseWebSocketServer
+import com.lodz.android.hermes.ws.server.OnWebSocketServerListener
+import com.lodz.android.hermes.ws.server.BaseWebSocketServer
 import com.lodz.android.hermesdemo.databinding.ActivityWsServerBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout

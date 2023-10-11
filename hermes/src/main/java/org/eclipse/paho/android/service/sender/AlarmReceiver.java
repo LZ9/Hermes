@@ -8,7 +8,6 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import org.eclipse.paho.android.service.MqttService;
 import org.eclipse.paho.android.service.MqttServiceConstants;
 import org.eclipse.paho.android.service.MqttUtils;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -27,14 +26,11 @@ public class AlarmReceiver extends BroadcastReceiver {
     @NonNull
     private final PowerManager.WakeLock mWakeLock;
 
-    private final MqttService mMqttService;
-
     private final ClientComms mClientComms;
 
-    public AlarmReceiver(@NonNull ClientComms clientComms, @NonNull MqttService service) {
+    public AlarmReceiver(@NonNull ClientComms clientComms, @NonNull Context context) {
         mClientComms = clientComms;
-        mMqttService = service;
-        mWakeLock = MqttUtils.getWakeLock(service, MqttServiceConstants.PING_WAKELOCK + clientComms.getClient().getClientId());
+        mWakeLock = MqttUtils.getWakeLock(context, MqttServiceConstants.PING_WAKELOCK + clientComms.getClient().getClientId());
     }
 
     @Override

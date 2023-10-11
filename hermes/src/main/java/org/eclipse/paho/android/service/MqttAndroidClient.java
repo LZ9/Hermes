@@ -16,38 +16,32 @@
  */
 package org.eclipse.paho.android.service;
 
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.os.Bundle;
 import android.os.IBinder;
-import android.text.TextUtils;
-import android.util.Log;
-import android.util.SparseArray;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import com.lodz.android.hermes.paho.android.service.Status;
-
-import org.eclipse.paho.android.service.event.ConnectionEvent;
-import org.eclipse.paho.android.service.token.MqttDeliveryTokenAndroid;
-import org.eclipse.paho.android.service.token.MqttTokenAndroid;
+import org.eclipse.paho.android.service.bean.ClientInfoBean;
+import org.eclipse.paho.android.service.bean.MqttClient;
+import org.eclipse.paho.android.service.contract.ConnectActionListener;
+import org.eclipse.paho.android.service.contract.DisconnectActionListener;
+import org.eclipse.paho.android.service.contract.MqttListener;
+import org.eclipse.paho.android.service.contract.PublishActionListener;
+import org.eclipse.paho.android.service.contract.ServiceStartActionListener;
+import org.eclipse.paho.android.service.contract.SubscribeActionListener;
+import org.eclipse.paho.android.service.contract.UnsubscribeActionListener;
+import org.eclipse.paho.android.service.event.Ack;
+import org.eclipse.paho.android.service.event.MqttAction;
+import org.eclipse.paho.android.service.event.MqttEvent;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
-import org.eclipse.paho.client.mqttv3.IMqttActionListener;
-import org.eclipse.paho.client.mqttv3.IMqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
-import org.eclipse.paho.client.mqttv3.IMqttToken;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
-import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 import org.greenrobot.eventbus.EventBus;
@@ -56,243 +50,65 @@ import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.HashMap;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
-/**
- * Enables an android application to communicate with an MQTT server using non-blocking methods.
- * <p>
- * Implementation of the MQTT asynchronous client interface {@link IMqttAsyncClient} , using the MQTT
- * android service to actually interface with MQTT server. It provides android applications a simple programming interface to all features of the MQTT version 3.1
- * specification including:
- * </p>
- * <ul>
- * <li>connect
- * <li>publish
- * <li>subscribe
- * <li>unsubscribe
- * <li>disconnect
- * </ul>
- */
-public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncClient {
+public class MqttAndroidClient  {
 
+    /** 上下文 */
+    @NonNull
+    private final Context mContext;
 
-    // The Android Service which will process our mqtt calls
+    /** MQTT服务 */
+    @Nullable
     private MqttService mMqttService;
-
-    /**
-     * 客户端主键
-     */
-    @NonNull
-    private String mClientKey = "";
-
-    @NonNull
-    private Context mContext;
-
-    // We hold the various tokens in a collection and pass identifiers for them to the service
-    private final SparseArray<IMqttToken> tokenMap = new SparseArray<>();
-    private int tokenNumber = 0;
-
-    /**
-     * MQTT服务端地址
-     */
-    private final String mServerURI;
-    /** 客户端ID */
-    private final String mClientId;
-    private final MqttClientPersistence mPersistence;
-    private MqttConnectOptions mConnectOptions;
-    private IMqttToken connectToken;
-
-    // The MqttCallback provided by the application
-    private MqttCallback callback;
-
-    //The acknowledgment that a message has been processed by the application
-    private final Ack messageAck;
+    /** 连接和消息到达回调接口 */
+    @Nullable
+    private MqttListener mCallback;
 
     private volatile boolean isRegisteredEvent = false;
-    private volatile boolean bindedService = false;
+
+    private SubscribeActionListener mSubscribeActionListener;
+
+    private UnsubscribeActionListener mUnsubscribeActionListener;
+
+    private PublishActionListener mPublishActionListener;
+
+    private ServiceStartActionListener mServiceStartActionListener;
+
+    private ConnectActionListener mConnectActionListener;
+
+    private DisconnectActionListener mDisconnectActionListener;
+
 
     /**
      * @param context   上下文
-     * @param serverURI MQTT服务端地址
-     * @param clientId  客户端id
      */
-    public MqttAndroidClient(@NonNull Context context, @NonNull String serverURI, @NonNull String clientId) {
-        this(context, serverURI, clientId, Ack.AUTO_ACK);
+    public MqttAndroidClient(@NonNull Context context) {
+        this.mContext = context;
+        registerEvent();
     }
 
-    /**
-     * @param context   上下文
-     * @param serverURI MQTT服务端地址
-     * @param clientId  客户端id
-     * @param ackType   消息确认模式类型
-     */
-    public MqttAndroidClient(@NonNull Context context, @NonNull String serverURI, @NonNull String clientId, @NonNull Ack ackType) {
-        this(context, serverURI, clientId, null, ackType);
-    }
-
-    /**
-     * @param context     上下文
-     * @param serverURI   MQTT服务端地址
-     * @param clientId    客户端id
-     * @param persistence 持久层接口
-     */
-    public MqttAndroidClient(@NonNull Context context, @NonNull String serverURI, @NonNull String clientId, @Nullable MqttClientPersistence persistence) {
-        this(context, serverURI, clientId, persistence, Ack.AUTO_ACK);
-    }
-
-    /**
-     * @param context     上下文
-     * @param serverURI   MQTT服务端地址
-     * @param clientId    客户端id
-     * @param persistence 持久层接口
-     * @param ackType     消息确认模式类型
-     */
-    public MqttAndroidClient(@NonNull Context context, @NonNull String serverURI, @NonNull String clientId, @Nullable MqttClientPersistence persistence, @NonNull Ack ackType) {
-        mContext = context;
-        mServerURI = serverURI;
-        mClientId = clientId;
-        mPersistence = persistence;
-        messageAck = ackType;
-    }
-
-    /**
-     * 是否已连接
-     */
-    @Override
-    public boolean isConnected() {
-        return !mClientKey.isEmpty() && mMqttService != null && mMqttService.isConnected(mClientKey);
-    }
-
-    /**
-     * 获取客户端ID
-     */
-    @Override
-    public String getClientId() {
-        return mClientId;
-    }
-
-    /**
-     * 获取MQTT服务端地址
-     */
-    @Override
-    public String getServerURI() {
-        return mServerURI;
-    }
-
-    /**
-     * 关闭客户端并释放资源，关闭后客户端无法再连接
-     */
-    @Override
-    public void close() {
-        if (mMqttService != null) {
-            if (TextUtils.isEmpty(mClientKey)) {
-                mClientKey = mMqttService.putClient(mServerURI, mClientId, mContext.getApplicationInfo().packageName, mPersistence);
-            }
-            mMqttService.close(mClientKey);
-        }
-    }
-
-    /**
-     * 连接服务器
-     */
-    @Override
-    public IMqttToken connect()  {
-        return connect(null, null);
-    }
-
-
-    /**
-     * 连接服务器
-     * @param options 连接配置
-     */
-    @Override
-    public IMqttToken connect(@NonNull MqttConnectOptions options)  {
-        return connect(options, null, null);
-    }
-
-    /**
-     * 连接服务器
-     * @param userContext 需要传递的数据（可选）
-     * @param callback 发布回调监听器
-     */
-    @Override
-    public IMqttToken connect(@Nullable Object userContext,@Nullable IMqttActionListener callback)  {
-        return connect(new MqttConnectOptions(), userContext, callback);
-    }
-
-    /**
-     * 连接服务器
-     * @param options 连接配置
-     * @param userContext 需要传递的数据（可选）
-     * @param callback 发布回调监听器
-     */
-
-    @Override
-    public IMqttToken connect(@NonNull MqttConnectOptions options, @Nullable Object userContext, @Nullable IMqttActionListener callback)  {
-        IMqttToken token = new MqttTokenAndroid(this, userContext, callback);
-        mConnectOptions = options;
-        connectToken = token;
-        if (mMqttService != null) {
-            doConnect();   // 重新连接
-            return token;
-        }
-
-        Intent intent = new Intent();
-        intent.setClassName(mContext, MqttService.class.getName());
-        ComponentName service = mContext.startService(intent);
-        if (service == null) {
-            IMqttActionListener listener = token.getActionCallback();
-            if (listener != null) {
-                listener.onFailure(token, new RuntimeException("cannot start service " + MqttService.class.getName()));
-            }
-            return token;
-        }
-
-        mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        return token;
-    }
-
-    /**
-     * 绑定服务
-     */
-    private final ServiceConnection mServiceConnection = new ServiceConnection(){
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder binder) {
-            mMqttService = ((MqttServiceBinder) binder).getService();
-            bindedService = true;
-            // now that we have the service available, we can actually connect...
-            doConnect();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
+    public void release(){
+        unregisterEvent();
+        if (mMqttService != null){
+            mMqttService.disconnectAll();
+            mMqttService.closeAll();
+            mContext.unbindService(mServiceConnection);
+            Intent intent = new Intent();
+            intent.setClassName(mContext, MqttService.class.getName());
+            mContext.stopService(intent);
             mMqttService = null;
         }
-
-        @Override
-        public void onBindingDied(ComponentName name) {
-            ServiceConnection.super.onBindingDied(name);
-        }
-
-        @Override
-        public void onNullBinding(ComponentName name) {
-            ServiceConnection.super.onNullBinding(name);
-        }
-    };
-
-    private void registerReceiver(BroadcastReceiver receiver) {
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(MqttServiceConstants.CALLBACK_TO_ACTIVITY);
-        LocalBroadcastManager.getInstance(mContext).registerReceiver(receiver, filter);
-        isRegisteredEvent = true;
     }
 
     private void registerEvent() {
@@ -309,87 +125,187 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
         }
     }
 
-    /** 执行连接操作 */
-    private void doConnect() {
-        if (!isRegisteredEvent){
-            registerReceiver(this);
-            registerEvent();
+    /**
+     * 设置连接和消息到达回调监听器
+     */
+    public void setCallback(MqttListener callback) {
+        this.mCallback = callback;
+    }
+
+    /**
+     * 是否已连接
+     * @param clientKey 客户端主键
+     */
+    public boolean isConnected(String clientKey) {
+        return mMqttService != null && mMqttService.isConnected(clientKey);
+    }
+
+    /**
+     * 获取客户端数据信息集合
+     */
+    public HashMap<String, ClientInfoBean> getClientInfoList() {
+        HashMap<String, ClientInfoBean> result = new HashMap<>();
+        if (mMqttService != null) {
+            HashMap<String, MqttClient> map = mMqttService.getClientMap();
+            for (String key : map.keySet()) {
+                result.put(key, map.get(key));
+            }
         }
-        if (TextUtils.isEmpty(mClientKey)) {
-            mClientKey = mMqttService.putClient(mServerURI, mClientId, mContext.getApplicationInfo().packageName, mPersistence);
+        return result;
+    }
+
+    /**
+     * 关闭客户端并释放资源，关闭后客户端无法再连接
+     */
+    public void close(String clientKey) {
+        if (mMqttService != null) {
+            mMqttService.close(clientKey);
         }
-        String activityToken = storeToken(connectToken);
-        try {
-            mMqttService.connect(mClientKey, mConnectOptions, activityToken);
-        } catch (Exception e) {
-            IMqttActionListener listener = connectToken.getActionCallback();
-            if (listener != null) {
-                listener.onFailure(connectToken, e);
+    }
+
+    /**
+     * 关闭客户端并释放资源，关闭后客户端无法再连接
+     */
+    public void closeAll() {
+        if (mMqttService != null) {
+            mMqttService.closeAll();
+        }
+    }
+
+    /** 通过连接参数创建连接客户端 */
+    public String createClientKeyByParam(@NonNull String serverURI, @NonNull String clientId) {
+        return createClientKeyByParam(serverURI, clientId, new MqttConnectOptions());
+    }
+
+    /** 通过连接参数创建连接客户端 */
+    public String createClientKeyByParam(@NonNull String serverURI, @NonNull String clientId, @NonNull MqttConnectOptions options) {
+        return createClientKeyByParam(serverURI, clientId, options, Ack.AUTO_ACK);
+    }
+
+    /** 通过连接参数创建连接客户端 */
+    public String createClientKeyByParam(@NonNull String serverURI, @NonNull String clientId, @NonNull MqttConnectOptions options, @NonNull Ack ackType) {
+        return createClientKeyByParam(serverURI, clientId, options, ackType, null);
+    }
+
+    /** 通过连接参数创建连接客户端 */
+    public String createClientKeyByParam(@NonNull String serverURI, @NonNull String clientId, @NonNull MqttConnectOptions options, @NonNull Ack ackType, @Nullable MqttClientPersistence persistence) {
+        return mMqttService != null ? mMqttService.createClientKeyByParam(serverURI, clientId, options, ackType, persistence) : "";
+    }
+
+    public void startService(ServiceStartActionListener listener){
+        mServiceStartActionListener = listener;
+        Intent intent = new Intent();
+        intent.setClassName(mContext, MqttService.class.getName());
+        ComponentName service = mContext.startService(intent);
+        if (service == null) {
+            if (mServiceStartActionListener != null) {
+                mServiceStartActionListener.onFailure("cannot start service " + MqttService.class.getName(), new RuntimeException());
+            }
+            return;
+        }
+        boolean flag = mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        if (!flag){
+            if (mServiceStartActionListener != null) {
+                mServiceStartActionListener.onFailure("cannot bind service " + MqttService.class.getName(), new RuntimeException());
             }
         }
     }
 
     /**
+     * 绑定服务
+     */
+    private final ServiceConnection mServiceConnection = new ServiceConnection(){
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder binder) {
+            mMqttService = ((MqttServiceBinder) binder).getService();
+            if (mServiceStartActionListener != null){
+                mServiceStartActionListener.onSuccess();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mMqttService = null;
+        }
+    };
+
+    /**
+     * 连接服务器
+     */
+    public void connect(String clientKey, ConnectActionListener listener) {
+        mConnectActionListener = listener;
+        if (mMqttService != null) {
+            mMqttService.connect(clientKey);
+        }
+    }
+
+    /**
      * 与服务器断开连接
      */
-    @Override
-    public IMqttToken disconnect()  {
-        return disconnect(-1, null, null);
+    public void disconnectAll()  {
+        if (mMqttService != null) {
+            mMqttService.disconnectAll();
+        }
     }
 
     /**
      * 与服务器断开连接
      * @param quiesceTimeout 在断开连接之前允许完成现有工作的时间（以毫秒为单位）。 值为零或更低意味着客户端不会停顿。
      */
-    @Override
-    public IMqttToken disconnect(long quiesceTimeout){
-        return disconnect(quiesceTimeout, null ,null);
+    public void disconnectAll(long quiesceTimeout){
+        if (mMqttService != null) {
+            mMqttService.disconnectAll(quiesceTimeout);
+        }
     }
 
     /**
      * 与服务器断开连接
-     * @param userContext 需要传递的数据（可选）
-     * @param callback    接口回调
      */
-    @Override
-    public IMqttToken disconnect(Object userContext, IMqttActionListener callback) {
-        return disconnect(-1, userContext, callback);
+    public void disconnect(String clientKey, DisconnectActionListener listener) {
+        disconnect(clientKey, -1, listener);
     }
 
     /**
      * 与服务器断开连接
      * @param quiesceTimeout 在断开连接之前允许完成现有工作的时间（以毫秒为单位）。 值为零或更低意味着客户端不会停顿。
-     * @param userContext 需要传递的数据（可选）
-     * @param callback    接口回调
      */
-    @Override
-    public IMqttToken disconnect(long quiesceTimeout,@Nullable Object userContext,@Nullable IMqttActionListener callback)  {
-        IMqttToken token = new MqttTokenAndroid(this, userContext, callback);
-        String activityToken = storeToken(token);
-        mMqttService.disconnect(mClientKey, quiesceTimeout, activityToken);
-        return token;
+    public void disconnect(String clientKey, long quiesceTimeout, DisconnectActionListener listener) {
+        mDisconnectActionListener = listener;
+        if (mMqttService != null) {
+            mMqttService.disconnect(clientKey, quiesceTimeout);
+        }
     }
 
     /**
      * 向服务器的主题发布消息
-     * @param topic 主题
-     * @param payload 消息内容
-     * @param qos 服务质量：0，1，2
-     * @param retained MQTT服务器是否保留该消息
+     * @param topic  主题
      */
-    @Override
-    public IMqttDeliveryToken publish(String topic, byte[] payload, int qos, boolean retained) {
-        return publish(topic, payload, qos, retained, null, null);
+    public IMqttDeliveryToken publish(String clientKey, String topic, String content) {
+        return publish(clientKey, topic, new MqttMessage(content.getBytes(StandardCharsets.UTF_8)), null);
     }
 
     /**
      * 向服务器的主题发布消息
-     * @param topic 主题
-     * @param message 消息内容
+     * @param topic  主题
      */
-    @Override
-    public IMqttDeliveryToken publish(String topic, MqttMessage message) {
-        return publish(topic, message, null, null);
+    public IMqttDeliveryToken publish(String clientKey, String topic, String content, PublishActionListener listener) {
+        return publish(clientKey, topic, new MqttMessage(content.getBytes(StandardCharsets.UTF_8)), listener);
+    }
+
+    /**
+     * 向服务器的主题发布消息
+     * @param topic  主题
+     */
+    public IMqttDeliveryToken publish(String clientKey, String topic, byte[] payload) {
+        return publish(clientKey, topic, new MqttMessage(payload), null);
+    }
+
+    /**
+     * 向服务器的主题发布消息
+     * @param topic  主题
+     */
+    public IMqttDeliveryToken publish(String clientKey, String topic, byte[] payload, PublishActionListener listener) {
+        return publish(clientKey, topic, new MqttMessage(payload), listener);
     }
 
     /**
@@ -398,31 +314,42 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
      * @param payload   消息内容
      * @param qos 服务质量：0，1，2
      * @param retained MQTT服务器是否保留该消息
-     * @param userContext 需要传递的数据（可选）
-     * @param callback 发布回调监听器
      */
-    @Override
-    public IMqttDeliveryToken publish(String topic, byte[] payload, int qos, boolean retained, Object userContext, IMqttActionListener callback) {
+    public IMqttDeliveryToken publish(String clientKey, String topic, byte[] payload, int qos, boolean retained, PublishActionListener listener) {
         MqttMessage message = new MqttMessage(payload);
         message.setQos(qos);
         message.setRetained(retained);
-        return publish(topic, message, userContext, callback);
+        return publish(clientKey, topic, message,listener);
     }
 
     /**
      * 向服务器的主题发布消息
      * @param topic  主题
      * @param message   消息
-     * @param userContext 需要传递的数据（可选）
-     * @param callback 发布回调监听器
      */
-    @Override
-    public IMqttDeliveryToken publish(String topic, MqttMessage message, Object userContext, IMqttActionListener callback) {
-        MqttDeliveryTokenAndroid token = new MqttDeliveryTokenAndroid(this, userContext, callback, message);
-        String activityToken = storeToken(token);
-        IMqttDeliveryToken internalToken = mMqttService.publish(mClientKey, topic, message, activityToken);
-        token.setDelegate(internalToken);
-        return token;
+    public IMqttDeliveryToken publish(String clientKey, String topic, MqttMessage message, PublishActionListener listener) {
+        mPublishActionListener = listener;
+        return mMqttService != null ? mMqttService.publish(clientKey, topic, message) : null;
+    }
+
+    /**
+     * 订阅主题
+     * @param topic 服务端主题
+     */
+    public void subscribe(String clientKey, String topic, SubscribeActionListener actionListener) {
+        subscribe(clientKey, topic, 0,actionListener);
+    }
+
+    /**
+     * 订阅主题
+     * @param topic 服务端主题数组
+     */
+    public void subscribe(String clientKey, String[] topic, SubscribeActionListener actionListener) {
+        int[] qosArray = new int[topic.length];
+        for (int i = 0; i < topic.length; i++) {
+            qosArray[i] = 0;
+        }
+        subscribe(clientKey, topic, qosArray,actionListener);
     }
 
     /**
@@ -430,9 +357,8 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
      * @param topic 服务端主题
      * @param qos 服务质量：0，1，2
      */
-    @Override
-    public IMqttToken subscribe(String topic, int qos) {
-        return subscribe(topic, qos, null, null);
+    public void subscribe(String clientKey, String topic, int qos, SubscribeActionListener actionListener) {
+        subscribe(clientKey, topic, qos, null,actionListener);
     }
 
     /**
@@ -440,428 +366,237 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
      * @param topic 服务端主题数组
      * @param qos 服务质量数组：0，1，2
      */
-    @Override
-    public IMqttToken subscribe(String[] topic, int[] qos) {
-        return subscribe(topic, qos, null, null);
+    public void subscribe(String clientKey, String[] topic, int[] qos, SubscribeActionListener actionListener) {
+        subscribe(clientKey, topic, qos, null,actionListener);
     }
 
     /**
      * 订阅主题
-     * @param topic 服务端主题
-     * @param qos 服务质量：0，1，2
-     * @param userContext 需要传递的数据（可选）
-     * @param callback 订阅回调监听器
+     * @param topic  服务端主题
+     * @param qos   服务质量：0，1，2
+     * @param listener 消息到达监听器
      */
-    @Override
-    public IMqttToken subscribe(String topic, int qos, Object userContext, IMqttActionListener callback)  {
-        return subscribe(new String[]{topic}, new int[]{qos}, userContext, callback);
+    public void subscribe(String clientKey, String topic, int qos, @Nullable IMqttMessageListener listener, SubscribeActionListener actionListener) {
+        subscribe(clientKey, new String[]{topic}, new int[]{qos}, listener == null ? null : new IMqttMessageListener[]{listener}, actionListener);
     }
 
     /**
      * 订阅主题
-     * @param topic 服务端主题
-     * @param callback 订阅回调监听器
+     * @param topic  服务端主题
+     * @param qos   服务质量：0，1，2
+     * @param listeners 消息到达监听器数组
      */
-    public IMqttToken subscribe(String topic, IMqttActionListener callback)  {
-        return subscribe(topic, 0, null, callback);
-    }
-
-    /**
-     * 订阅主题
-     * @param topic 服务端主题数组
-     * @param callback 订阅回调监听器
-     */
-    public IMqttToken subscribe(String[] topic, IMqttActionListener callback)  {
-        int[] qosArray = new int[topic.length];
-        for (int i = 0; i < topic.length; i++) {
-            qosArray[i] = 0;
+    public void subscribe(String clientKey, String[] topic, int[] qos, @Nullable IMqttMessageListener[] listeners, SubscribeActionListener actionListener) {
+        mSubscribeActionListener = actionListener;
+        if (mMqttService != null) {
+            mMqttService.subscribe(clientKey, topic, qos, listeners);
         }
-        return subscribe(topic, qosArray, null, callback);
     }
-
-    /**
-     * 订阅主题
-     * @param topic 服务端主题
-     * @param qos 服务质量：0，1，2
-     * @param userContext 需要传递的数据（可选）
-     * @param callback 订阅回调监听器
-     */
-    @Override
-    public IMqttToken subscribe(String[] topic, int[] qos, Object userContext, IMqttActionListener callback)  {
-        return subscribe(topic, qos, userContext, callback, null);
-    }
-
-    /**
-     * 订阅主题
-     * @param topic  服务端主题
-     * @param qos   服务质量：0，1，2
-     * @param userContext  需要传递的数据（可选）
-     * @param callback     订阅回调监听器
-     * @param messageListener 消息到达监听器
-     */
-    public IMqttToken subscribe(String topic, int qos, Object userContext, IMqttActionListener callback, IMqttMessageListener messageListener){
-        return subscribe(new String[]{topic}, new int[]{qos}, userContext, callback, new IMqttMessageListener[]{messageListener});
-    }
-
-    /**
-     * 订阅主题
-     * @param topic  服务端主题
-     * @param qos   服务质量：0，1，2
-     * @param messageListener 消息到达监听器
-     */
-    public IMqttToken subscribe(String topic, int qos, IMqttMessageListener messageListener)  {
-        return subscribe(topic, qos, null, null, messageListener);
-    }
-
-    /**
-     * 订阅主题
-     * @param topic  服务端主题数组
-     * @param qos   服务质量数组：0，1，2
-     * @param messageListeners 消息到达监听器数组
-     */
-    public IMqttToken subscribe(String[] topic, int[] qos, IMqttMessageListener[] messageListeners)  {
-        return subscribe(topic, qos, null, null, messageListeners);
-    }
-
-    /**
-     * 订阅主题
-     * @param topic  服务端主题
-     * @param qos   服务质量：0，1，2
-     * @param userContext  需要传递的数据（可选）
-     * @param callback     订阅回调监听器
-     * @param messageListeners 消息到达监听器数组
-     */
-    public IMqttToken subscribe(String[] topic, int[] qos, Object userContext, IMqttActionListener callback, IMqttMessageListener[] messageListeners){
-        IMqttToken token = new MqttTokenAndroid(this, userContext, callback, topic);
-        String activityToken = storeToken(token);
-        mMqttService.subscribe(mClientKey, topic, qos, activityToken, messageListeners);
-        return token;
-    }
-
 
     /**
      * 取消服务端主题的订阅
      * @param topic 服务端主题
      */
-    @Override
-    public IMqttToken unsubscribe(String topic)  {
-        return unsubscribe(topic, null, null);
-    }
-
-    /**
-     * 取消服务端主题的订阅
-     * @param topic 服务端主题数组
-     */
-    @Override
-    public IMqttToken unsubscribe(String[] topic)  {
-        return unsubscribe(topic, null, null);
-    }
-
-    /**
-     * 取消服务端主题的订阅
-     * @param topic  服务端主题
-     * @param userContext  需要传递的数据（可选）
-     * @param callback     订阅回调监听器
-     */
-    @Override
-    public IMqttToken unsubscribe(String topic, Object userContext, IMqttActionListener callback) {
-        return unsubscribe(new String[]{topic}, userContext, callback);
+    public void unsubscribe(String clientKey, String topic, UnsubscribeActionListener listener) {
+        unsubscribe(clientKey, new String[]{topic}, listener);
     }
 
     /**
      * 取消服务端主题的订阅
      * @param topic  服务端主题数组
-     * @param userContext  需要传递的数据（可选）
-     * @param callback     订阅回调监听器
      */
-    @Override
-    public IMqttToken unsubscribe(String[] topic, Object userContext, IMqttActionListener callback) {
-        IMqttToken token = new MqttTokenAndroid(this, userContext, callback);
-        String activityToken = storeToken(token);
-        mMqttService.unsubscribe(mClientKey, topic, activityToken);
-        return token;
+    public void unsubscribe(String clientKey, String[] topic, UnsubscribeActionListener listener) {
+        mUnsubscribeActionListener = listener;
+        if (mMqttService != null) {
+            mMqttService.unsubscribe(clientKey, topic);
+        }
     }
 
     /**
      * 获取IMqttDeliveryToken数组
      */
-    @Override
-    public IMqttDeliveryToken[] getPendingDeliveryTokens() {
-        return mMqttService.getPendingDeliveryTokens(mClientKey);
-    }
-
-    /**
-     * 设置Mqtt监听器
-     */
-    @Override
-    public void setCallback(MqttCallback callback) {
-        this.callback = callback;
-    }
-
-    /**
-     * 广播接收
-     */
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        Bundle data = intent.getExtras();
-
-        String handleFromIntent = data.getString(MqttServiceConstants.CALLBACK_CLIENT_HANDLE);
-
-        if ((handleFromIntent == null) || (!handleFromIntent.equals(mClientKey))) {
-            return;
-        }
-
-        String action = data.getString(MqttServiceConstants.CALLBACK_ACTION);
-
-        if (MqttServiceConstants.CONNECT_ACTION.equals(action)) {
-            connectAction(data);
-        } else if (MqttServiceConstants.CONNECT_EXTENDED_ACTION.equals(action)) {
-            connectExtendedAction(data);
-        } else if (MqttServiceConstants.MESSAGE_ARRIVED_ACTION.equals(action)) {
-            messageArrivedAction(data);
-        } else if (MqttServiceConstants.SUBSCRIBE_ACTION.equals(action)) {
-            subscribeAction(data);
-        } else if (MqttServiceConstants.UNSUBSCRIBE_ACTION.equals(action)) {
-            unSubscribeAction(data);
-        } else if (MqttServiceConstants.SEND_ACTION.equals(action)) {
-            sendAction(data);
-        } else if (MqttServiceConstants.MESSAGE_DELIVERED_ACTION.equals(action)) {
-            messageDeliveredAction(data);
-        } else if (MqttServiceConstants.ON_CONNECTION_LOST_ACTION.equals(action)) {
-            connectionLostAction(data);
-        } else if (MqttServiceConstants.DISCONNECT_ACTION.equals(action)) {
-            disconnected(data);
-        } else {
-            Log.e(MqttService.TAG, "Callback action doesn't exist.");
-        }
-
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onConnectionEvent(ConnectionEvent event) {
-        // TODO: 2023/9/21 替换onReceive
-
+    public IMqttDeliveryToken[] getPendingDeliveryTokens(String clientKey) {
+        return mMqttService != null ? mMqttService.getPendingDeliveryTokens(clientKey) : null;
     }
 
     /**
      * 手动确认消息到达
      */
-    public boolean acknowledgeMessage(String messageId) {
-        return messageAck == Ack.MANUAL_ACK && mMqttService.acknowledgeMessageArrival(mClientKey, messageId);
+    public boolean acknowledgeMessage(String clientKey, String messageId) {
+        return mMqttService != null && mMqttService.acknowledgeMessageArrival(clientKey, messageId);
     }
 
-    @Override
-    public void messageArrivedComplete(int messageId, int qos) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setManualAcks(boolean manualAcks) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * 处理连接结果
-     * @param data 回调数据
-     */
-    private void connectAction(Bundle data) {
-        IMqttToken token = connectToken;
-        removeMqttToken(data);
-        simpleAction(token, data);
-    }
-
-    /**
-     * 回调的通用处理
-     * @param token 正在执行操作的令牌
-     * @param data  回调数据
-     */
-    private void simpleAction(IMqttToken token, Bundle data) {
-        if (token == null){
-            Log.e(MqttService.TAG, "simpleAction : token is null");
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onMqttEvent(MqttEvent event) {
+        MqttAction action = event.action;
+        if (action == MqttAction.ACTION_MSG_ARRIVED){
+            msgArrivedCallback(event);
             return;
         }
-        Status status = (Status) data.getSerializable(MqttServiceConstants.CALLBACK_STATUS);
-        if (status == Status.OK) {
-            ((MqttTokenAndroid) token).notifyComplete();
-        } else {
-            Exception exceptionThrown = (Exception) data.getSerializable(MqttServiceConstants.CALLBACK_EXCEPTION);
-            ((MqttTokenAndroid) token).notifyFailure(exceptionThrown);
+        if (action == MqttAction.ACTION_CONNECTION_LOST){
+            connectionLostCallback(event);
+            return;
         }
-    }
-
-    /**
-     * 处理断开连接结果
-     * @param data 回调数据
-     */
-    private void disconnected(Bundle data) {
-        mClientKey = "";
-        IMqttToken token = removeMqttToken(data);
-        if (token != null) {
-            ((MqttTokenAndroid) token).notifyComplete();
+        if (action == MqttAction.ACTION_DELIVERY_COMPLETE){
+            deliveryCompleteCallback(event);
+            return;
         }
-        if (callback != null) {
-            callback.connectionLost(null);
+        if (action == MqttAction.ACTION_CONNECT_COMPLETE){
+            connectCompleteCallback(event);
+            return;
         }
-    }
-
-    /**
-     * 处理连接丢失结果
-     * @param data 回调数据
-     */
-    private void connectionLostAction(Bundle data) {
-        if (callback != null) {
-            Exception reason = (Exception) data.getSerializable(MqttServiceConstants.CALLBACK_EXCEPTION);
-            callback.connectionLost(reason);
+        if (action == MqttAction.ACTION_DISCONNECT){
+            disconnectCallback(event);
+            return;
         }
-    }
-
-    /**
-     * 处理连接完成
-     * @param data 回调数据
-     */
-    private void connectExtendedAction(Bundle data) {
-        // This is called differently from a normal connect
-        if (callback instanceof MqttCallbackExtended) {
-            boolean reconnect = data.getBoolean(MqttServiceConstants.CALLBACK_RECONNECT, false);
-            String serverURI = data.getString(MqttServiceConstants.CALLBACK_SERVER_URI);
-            ((MqttCallbackExtended) callback).connectComplete(reconnect, serverURI);
+        if (action == MqttAction.ACTION_SUBSCRIBE){
+            subscribeCallback(event);
+            return;
         }
+        if (action == MqttAction.ACTION_UNSUBSCRIBE){
+            unsubscribeCallback(event);
+            return;
+        }
+        if (action == MqttAction.ACTION_PUBLISH_MSG){
+            publishMsgCallback(event);
+            return;
+        }
+        if (action == MqttAction.ACTION_CONNECT){
+            connectCallback(event);
+            return;
+        }
+//        callActionListener(event);
     }
 
-
-
-    /**
-     * 处理发送消息结果
-     * @param data 回调数据
-     */
-    private void sendAction(Bundle data) {
-        IMqttToken token = getMqttToken(data); // get, don't remove - will
-        // remove on delivery
-        simpleAction(token, data);
-    }
-
-    /**
-     * 处理订阅主题结果
-     * @param data 回调数据
-     */
-    private void subscribeAction(Bundle data) {
-        IMqttToken token = removeMqttToken(data);
-        simpleAction(token, data);
-    }
-
-    /**
-     * 处理取消订阅主题结果
-     * @param data 回调数据
-     */
-    private void unSubscribeAction(Bundle data) {
-        IMqttToken token = removeMqttToken(data);
-        simpleAction(token, data);
-    }
-
-    /**
-     * 处理已发布消息已送达的结果
-     * @param data 回调数据
-     */
-    private void messageDeliveredAction(Bundle data) {
-        IMqttToken token = removeMqttToken(data);
-        if (token != null) {
-            if (callback != null) {
-                Status status = (Status) data.getSerializable(MqttServiceConstants.CALLBACK_STATUS);
-                if (status == Status.OK && token instanceof IMqttDeliveryToken) {
-                    callback.deliveryComplete((IMqttDeliveryToken) token);
-                }
+    private void connectCallback(MqttEvent event) {
+        if (event.result == MqttEvent.RESULT_SUCCESS) {
+            if (mConnectActionListener != null) {
+                mConnectActionListener.onSuccess(event.action, event.clientKey);
+            }
+        }
+        if (event.result == MqttEvent.RESULT_FAIL) {
+            if (mConnectActionListener != null) {
+                mConnectActionListener.onFailure(event.action, event.clientKey, event.errorMsg, event.exception);
             }
         }
     }
 
-    /**
-     * 处理消息送达结果
-     * @param data 回调数据
-     */
-    private void messageArrivedAction(Bundle data) {
-        if (callback != null) {
-            String messageId = data.getString(MqttServiceConstants.CALLBACK_MESSAGE_ID);
-            String destinationName = data.getString(MqttServiceConstants.CALLBACK_DESTINATION_NAME);
-
-            ParcelableMqttMessage message = data.getParcelable(MqttServiceConstants.CALLBACK_MESSAGE_PARCEL);
-            try {
-                if (messageAck == Ack.AUTO_ACK) {
-                    callback.messageArrived(destinationName, message);
-                    mMqttService.acknowledgeMessageArrival(mClientKey, messageId);
-                } else {
-                    message.messageId = messageId;
-                    callback.messageArrived(destinationName, message);
-                }
-
-                // let the service discard the saved message details
-            } catch (Exception e) {
-                // Swallow the exception
+    private void publishMsgCallback(MqttEvent event) {
+        if (event.result == MqttEvent.RESULT_SUCCESS) {
+            if (mPublishActionListener != null) {
+                mPublishActionListener.onSuccess(event.action, event.clientKey, event.topic, event.message);
+            }
+        }
+        if (event.result == MqttEvent.RESULT_FAIL) {
+            if (mPublishActionListener != null) {
+                mPublishActionListener.onFailure(event.action, event.clientKey, event.topic, event.errorMsg, event.exception);
             }
         }
     }
 
-    /**
-     * 保存票据
-     * @param token 票据
-     */
-    private synchronized String storeToken(IMqttToken token) {
-        tokenMap.put(tokenNumber, token);
-        return Integer.toString(tokenNumber++);
-    }
 
-    /**
-     * 删除票据
-     * @param data 回调数据
-     */
-    private synchronized IMqttToken removeMqttToken(Bundle data) {
-        String activityToken = data.getString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN);
-        if (activityToken != null) {
-            int tokenNumber = Integer.parseInt(activityToken);
-            IMqttToken token = tokenMap.get(tokenNumber);
-            tokenMap.delete(tokenNumber);
-            return token;
+    private void subscribeCallback(MqttEvent event) {
+        if (event.result == MqttEvent.RESULT_SUCCESS) {
+            if (mSubscribeActionListener != null) {
+                mSubscribeActionListener.onSuccess(event.action, event.clientKey, event.topics);
+            }
         }
-        return null;
+        if (event.result == MqttEvent.RESULT_FAIL) {
+            if (mSubscribeActionListener != null) {
+                mSubscribeActionListener.onFailure(event.action, event.clientKey, event.topics, event.errorMsg, event.exception);
+            }
+        }
     }
 
-    /**
-     * 获取票据
-     * @param data 回调数据
-     */
-    private synchronized IMqttToken getMqttToken(Bundle data) {
-        String activityToken = data.getString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN);
-        return tokenMap.get(Integer.parseInt(activityToken));
+    private void unsubscribeCallback(MqttEvent event) {
+        if (event.result == MqttEvent.RESULT_SUCCESS) {
+            if (mUnsubscribeActionListener != null) {
+                mUnsubscribeActionListener.onSuccess(event.action, event.clientKey, event.topics);
+            }
+        }
+        if (event.result == MqttEvent.RESULT_FAIL) {
+            if (mUnsubscribeActionListener != null) {
+                mUnsubscribeActionListener.onFailure(event.action, event.clientKey, event.topics, event.errorMsg, event.exception);
+            }
+        }
+    }
+
+    private void msgArrivedCallback(MqttEvent event) {
+        if (mMqttService != null) {
+            acknowledgeMessage(event.clientKey, event.data.messageId);
+        }
+        if (mCallback != null) {
+            mCallback.messageArrived(event.data.clientKey, event.data.topic, event.data.messageId, event.data.message);
+        }
+    }
+
+    private void connectionLostCallback(MqttEvent event) {
+        if (mCallback != null) {
+            mCallback.connectionLost(event.clientKey, event.exception);
+        }
+    }
+
+    private void deliveryCompleteCallback(MqttEvent event) {
+        if (mCallback != null) {
+            mCallback.deliveryComplete(event.clientKey, event.token);
+        }
+    }
+
+    private void connectCompleteCallback(MqttEvent event) {
+        if (mCallback != null) {
+            mCallback.connectComplete(event.clientKey, event.isReconnect, event.serverURI);
+        }
+    }
+
+    private void disconnectCallback(MqttEvent event) {
+        if (event.result == MqttEvent.RESULT_SUCCESS) {
+            if (mDisconnectActionListener != null) {
+                mDisconnectActionListener.onSuccess(event.action, event.clientKey);
+            }
+            if (mCallback != null) {
+                mCallback.connectionLost(event.clientKey, event.exception);
+            }
+        }
+        if (event.result == MqttEvent.RESULT_FAIL) {
+            if (mDisconnectActionListener != null) {
+                mDisconnectActionListener.onFailure(event.action, event.clientKey, event.errorMsg, event.exception);
+            }
+        }
     }
 
     /**
      * 设置断连缓冲配置项
      * @param bufferOpts 断连缓冲配置项
      */
-    public void setBufferOpts(DisconnectedBufferOptions bufferOpts) {
-        mMqttService.setBufferOpts(mClientKey, bufferOpts);
+    public void setBufferOpts(String clientKey, DisconnectedBufferOptions bufferOpts) {
+        if (mMqttService != null) {
+            mMqttService.setBufferOpts(clientKey, bufferOpts);
+        }
     }
 
     /**
      * 获取断连缓冲配置项
      */
-    public int getBufferedMessageCount() {
-        return mMqttService.getBufferedMessageCount(mClientKey);
+    public int getBufferedMessageCount(String clientKey) {
+        return mMqttService != null ? mMqttService.getBufferedMessageCount(clientKey) : 0;
     }
 
     /**
      * 获取消息
      * @param bufferIndex 索引
      */
-    public MqttMessage getBufferedMessage(int bufferIndex) {
-        return mMqttService.getBufferedMessage(mClientKey, bufferIndex);
+    public MqttMessage getBufferedMessage(String clientKey, int bufferIndex) {
+        return  mMqttService != null ? mMqttService.getBufferedMessage(clientKey, bufferIndex) : null;
     }
 
     /**
      * 删除消息
      * @param bufferIndex 索引
      */
-    public void deleteBufferedMessage(int bufferIndex) {
-        mMqttService.deleteBufferedMessage(mClientKey, bufferIndex);
+    public void deleteBufferedMessage(String clientKey, int bufferIndex) {
+        if (mMqttService != null){
+            mMqttService.deleteBufferedMessage(clientKey, bufferIndex);
+        }
     }
 
     /**
@@ -882,62 +617,5 @@ public class MqttAndroidClient extends BroadcastReceiver implements IMqttAsyncCl
         } catch (KeyStoreException | CertificateException | IOException | NoSuchAlgorithmException | KeyManagementException e) {
             throw new MqttSecurityException(e);
         }
-    }
-
-    @Override
-    public void disconnectForcibly() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void disconnectForcibly(long disconnectTimeout)  {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void disconnectForcibly(long quiesceTimeout, long disconnectTimeout)  {
-        throw new UnsupportedOperationException();
-    }
-
-    public void unregisterResources() {
-        if (isRegisteredEvent) {
-            synchronized (MqttAndroidClient.this) {
-                LocalBroadcastManager.getInstance(mContext).unregisterReceiver(this);
-                isRegisteredEvent = false;
-            }
-            if (bindedService) {
-                try {
-                    mContext.unbindService(mServiceConnection);
-                    bindedService = false;
-                } catch (IllegalArgumentException e) {
-                    //Ignore unbind issue.
-                }
-            }
-        }
-    }
-
-    public void registerResources(Context context) {
-        if (context != null) {
-            this.mContext = context;
-            if (!isRegisteredEvent) {
-                registerReceiver(this);
-            }
-        }
-    }
-
-    @Override
-    public boolean removeMessage(IMqttDeliveryToken token) {
-
-        return false;
-    }
-
-    @Override
-    public void reconnect() throws MqttException {
-        connect();
-    }
-
-    @Override
-    public int getInFlightMessageCount() {
-        return 0;
     }
 }

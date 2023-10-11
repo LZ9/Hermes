@@ -12,6 +12,7 @@ import com.lodz.android.hermesdemo.databinding.ActivityMqttBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout
+import org.eclipse.paho.client.mqttv3.MqttMessage
 import java.nio.ByteBuffer
 
 /**
@@ -79,6 +80,7 @@ class MqttActivity : BaseActivity(){
         if (mHermes?.isConnected() == true){
             mHermes?.disconnect()
         }
+        mHermes?.release()
         mHermes = null
     }
 
@@ -253,13 +255,13 @@ class MqttActivity : BaseActivity(){
                 }
             })
             .setOnUnsubscribeListener(object : OnUnsubscribeListener {
-                override fun onUnsubscribeSuccess(topic: String) {
-                    logResult("解除订阅成功 : topic ---> $topic")
+                override fun onUnsubscribeSuccess(topics: Array<String>) {
+                    logResult("解除订阅成功 : topic ---> $topics")
                     logResult("剩余订阅列表 : ${mHermes?.getSubscribeTopic()}")
                 }
 
-                override fun onUnsubscribeFailure(topic: String, cause: Throwable) {
-                    logResult("解除订阅失败 : topic ---> $topic   ${cause.message}")
+                override fun onUnsubscribeFailure(topics: Array<String>, cause: Throwable) {
+                    logResult("解除订阅失败 : topic ---> $topics   ${cause.message}")
                 }
             })
             .buildConnect(applicationContext)

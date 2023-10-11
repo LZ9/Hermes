@@ -15,6 +15,7 @@ package org.eclipse.paho.android.service.sender;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
@@ -22,7 +23,6 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import org.eclipse.paho.android.service.MqttService;
 import org.eclipse.paho.android.service.MqttServiceConstants;
 import org.eclipse.paho.client.mqttv3.MqttPingSender;
 import org.eclipse.paho.client.mqttv3.internal.ClientComms;
@@ -32,27 +32,27 @@ public class AlarmPingSender implements MqttPingSender {
 	private static final String TAG = "AlarmPingSender";
 
 	private ClientComms mClientComms;
-	private final MqttService mMqttService;
+	private final Context mContext;
 	private AlarmReceiver mAlarmReceiver;
 	private PendingIntent mPendingIntent;
 	private volatile boolean hasStarted = false;
 
-	public AlarmPingSender(@NonNull MqttService service) {
-		mMqttService = service;
+	public AlarmPingSender(@NonNull Context context) {
+		mContext = context;
 	}
 
 	@Override
 	public void init(ClientComms comms) {
 		mClientComms = comms;
-		mAlarmReceiver = new AlarmReceiver(comms, mMqttService);
+		mAlarmReceiver = new AlarmReceiver(comms, mContext);
 	}
 
 	@Override
 	public void start() {
 		String action = MqttServiceConstants.PING_SENDER + mClientComms.getClient().getClientId();
 		Log.d(TAG, "register AlarmReceiver to MqttService by action = " + action);
-		mMqttService.registerReceiver(mAlarmReceiver, new IntentFilter(action));
-		mPendingIntent = PendingIntent.getBroadcast(mMqttService, 0, new Intent(action), PendingIntent.FLAG_UPDATE_CURRENT);
+		mContext.registerReceiver(mAlarmReceiver, new IntentFilter(action));
+		mPendingIntent = PendingIntent.getBroadcast(mContext, 0, new Intent(action), PendingIntent.FLAG_UPDATE_CURRENT);
 
 		hasStarted = true;
 		schedule(mClientComms.getKeepAlive());
@@ -65,10 +65,10 @@ public class AlarmPingSender implements MqttPingSender {
 			hasStarted = false;
 			if(mPendingIntent != null){
 				// Cancel Alarm.
-				AlarmManager alarmManager = (AlarmManager) mMqttService.getSystemService(Service.ALARM_SERVICE);
+				AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Service.ALARM_SERVICE);
 				alarmManager.cancel(mPendingIntent);
 			}
-			mMqttService.unregisterReceiver(mAlarmReceiver);
+			mContext.unregisterReceiver(mAlarmReceiver);
 		}
 	}
 
@@ -76,7 +76,7 @@ public class AlarmPingSender implements MqttPingSender {
 	public void schedule(long delayInMilliseconds) {
 		long nextAlarmInMilliseconds = System.currentTimeMillis() + delayInMilliseconds;
 		Log.d(TAG, "Schedule next alarm at " + nextAlarmInMilliseconds);
-		AlarmManager alarmManager = (AlarmManager) mMqttService.getSystemService(Service.ALARM_SERVICE);
+		AlarmManager alarmManager = (AlarmManager) mContext.getSystemService(Service.ALARM_SERVICE);
 
 		if (Build.VERSION.SDK_INT >= 23) {
 			// In SDK 23 and above, dosing will prevent setExact, setExactAndAllowWhileIdle will force

@@ -3,6 +3,7 @@ package com.lodz.android.hermes.modules
 import android.content.Context
 import androidx.annotation.IntDef
 import com.lodz.android.hermes.contract.*
+import org.eclipse.paho.android.service.contract.ServiceStartActionListener
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 
 /**
@@ -132,8 +133,15 @@ class HermesAgent private constructor() {
             WEB_SOCKET -> WebSocketImpl()
             else -> null
         } ?: throw NullPointerException("unsupport connect type")
-        client.init(context.applicationContext, mUrl, mClientId, mMqttConnectOptions)
-        client.setSubTopic(mSubTopics)
+        client.init(context.applicationContext, mUrl, mClientId, mMqttConnectOptions, object :ServiceStartActionListener{
+            override fun onSuccess() {
+                client.setSubTopic(mSubTopics)
+            }
+
+            override fun onFailure(errorMsg: String?, t: Throwable?) {
+
+            }
+        })
         client.setOnSubscribeListener(mOnSubscribeListener)
         client.setOnConnectListener(mOnConnectListener)
         client.setOnSendListener(mOnSendListener)

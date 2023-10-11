@@ -3,6 +3,7 @@ package com.lodz.android.hermes.modules
 import android.content.Context
 import com.lodz.android.hermes.contract.*
 import kotlinx.coroutines.*
+import org.eclipse.paho.android.service.contract.ServiceStartActionListener
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.java_websocket.framing.CloseFrame
 import org.java_websocket.handshake.ServerHandshake
@@ -37,7 +38,7 @@ class WebSocketImpl : Hermes {
     /** 是否静默 */
     private var isSilent: Boolean = false
 
-    override fun init(context: Context?, url: String, clientId: String?, options: MqttConnectOptions?) {
+    override fun init(context: Context?, url: String, clientId: String?, options: MqttConnectOptions?, listener: ServiceStartActionListener?) {
         mUrl = url
         isAutomaticReconnect = options?.isAutomaticReconnect ?: true
         mWsClient = WsClient(url)
@@ -142,7 +143,7 @@ class WebSocketImpl : Hermes {
             return
         }
         if (mWsClient == null) {
-            init(null, mUrl, null, null)
+            init(null, mUrl, null, null, null)
         }
         mWsClient?.connect()
         mJob?.cancel()
@@ -154,8 +155,11 @@ class WebSocketImpl : Hermes {
 
     override fun disconnect() {
         mJob?.cancel()
-        mJob = null
         mWsClient?.close()
+    }
+
+    override fun release() {
+        mJob = null
         mWsClient = null
     }
 

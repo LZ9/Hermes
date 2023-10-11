@@ -8,9 +8,9 @@ package com.lodz.android.hermes.contract
 interface OnUnsubscribeListener {
 
     /** 解除订阅成功，主题名称[topic] */
-    fun onUnsubscribeSuccess(topic: String)
+    fun onUnsubscribeSuccess(topics: Array<String>)
 
     /** 解除订阅失败，主题名称[topic]，异常[cause] */
-    fun onUnsubscribeFailure(topic: String, cause: Throwable)
+    fun onUnsubscribeFailure(topics: Array<String>, cause: Throwable)
 
 }

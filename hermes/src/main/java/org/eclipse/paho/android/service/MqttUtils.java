@@ -42,4 +42,9 @@ public class MqttUtils {
         }
     }
 
+    /** 获取客户端主键 */
+    public static String getClientKey(Context context, String clientId, String serverURI) {
+        return serverURI + ":" + clientId + ":" + context.getApplicationInfo().packageName;
+    }
+
 }

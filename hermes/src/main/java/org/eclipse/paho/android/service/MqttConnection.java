@@ -12,18 +12,23 @@
  */
 package org.eclipse.paho.android.service;
 
+import android.accounts.NetworkErrorException;
 import android.content.Context;
-import android.os.Bundle;
 import android.os.PowerManager.WakeLock;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.lodz.android.hermes.paho.android.service.Status;
-
+import org.eclipse.paho.android.service.bean.ClientInfoBean;
+import org.eclipse.paho.android.service.contract.DisconnectMqttEventActionListener;
+import org.eclipse.paho.android.service.contract.PublishMqttEventActionListener;
+import org.eclipse.paho.android.service.contract.SubscribeMqttEventActionListener;
+import org.eclipse.paho.android.service.contract.UnsubscribeMqttEventActionListener;
 import org.eclipse.paho.android.service.db.DbStoredData;
-import org.eclipse.paho.android.service.event.ConnectionEvent;
+import org.eclipse.paho.android.service.db.MessageStore;
+import org.eclipse.paho.android.service.event.MqttAction;
+import org.eclipse.paho.android.service.event.MqttEvent;
 import org.eclipse.paho.android.service.sender.AlarmPingSender;
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
@@ -33,256 +38,145 @@ import org.eclipse.paho.client.mqttv3.IMqttToken;
 import org.eclipse.paho.client.mqttv3.MqttAsyncClient;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
-import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence;
 import org.greenrobot.eventbus.EventBus;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 public class MqttConnection implements MqttCallbackExtended {
 
 	private static final String TAG = "MqttConnection";
-	// Error status messages
-	private static final String NOT_CONNECTED = "not connected";
 
-	/**
-	 * 服务端地址
-	 */
-	private final String mServerURI;
-	/**
-	 * 客户端ID
-	 */
-	private final String mClientId;
-
-	/**
-	 * 持久层接口
-	 */
-	private MqttClientPersistence mPersistence;
-	/**
-	 * 连接配置项
-	 */
-	private MqttConnectOptions mConnectOptions;
-
-	/**
-	 * 客户端主键
-	 */
-	private final String mClientKey;
-
-
-	/**
-	 * 重连票据
-	 */
-	private String mReconnectActivityToken = "";
+	private final Context mContext;
 
 	/**
 	 * 客户端
 	 */
-	private MqttAsyncClient mClient = null;
+	@Nullable
+	private  MqttAsyncClient mClient = null;
 
 	/**
 	 * ping数据包发送器
 	 */
-	private AlarmPingSender mAlarmPingSender = null;
-
-	/**
-	 * Mqtt服务
-	 */
-	private final MqttService mService;
-
-	/**
-	 * 是否断开连接
-	 */
-	private volatile boolean isDisconnected = true;
-	/**
-	 * 是否清理会话
-	 */
-	private boolean isCleanSession = true;
+	private final AlarmPingSender mAlarmPingSender;
 
 	/**
 	 * 是否连接中
 	 */
 	private volatile boolean isConnecting = false;
 
-	/**
-	 * 主题缓存
-	 */
-	private final Map<IMqttDeliveryToken, String> mSavedTopics = new HashMap<>();
-	/**
-	 * 消息缓存
-	 */
-	private final Map<IMqttDeliveryToken, MqttMessage> mSavedSentMessages = new HashMap<>();
-	/**
-	 * 票据缓存
-	 */
-	private final Map<IMqttDeliveryToken, String> mSavedActivityTokens = new HashMap<>();
-
 	/** 唤醒锁 */
 	@NonNull
-	private WakeLock mWakeLock;
+	private final WakeLock mWakeLock;
+
+	/** 数据库操作接口 */
+	@NonNull
+	public final MessageStore mMessageStore;
+
+	private final ClientInfoBean mBean;
 
 	private DisconnectedBufferOptions bufferOpts = null;
 
-	public MqttConnection(MqttService service, String serverURI, String clientId, MqttClientPersistence persistence, String clientKey) {
-		mServerURI = serverURI;
-		mService = service;
-		mClientId = clientId;
-		mPersistence = persistence;
-		mClientKey = clientKey;
-		mWakeLock = MqttUtils.getWakeLock(service, getClass().getName() + " " + mClientId + " " + "on host " + mServerURI);
-	}
-
-	/**
-	 * 连接服务器
-	 *
-	 * @param options 连接配置项
-	 * @param activityToken 票据
-	 */
-	public void connect(@NonNull MqttConnectOptions options, String activityToken) {
-		Log.d(TAG, "start connect {" + mClientKey + "}");
-		mConnectOptions = options;
-		mReconnectActivityToken = activityToken;
-		isCleanSession = options.isCleanSession();
-		if (isCleanSession) { // 如果是新的会话则清空数据库缓存
-			mService.mMessageStore.clearAllMessages(mClientKey);
-		}
-
-
-		final Bundle resultBundle = new Bundle();
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN, activityToken);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.CONNECT_ACTION);
-		
+	public MqttConnection(Context context, ClientInfoBean bean, @NonNull MqttClientPersistence persistence, @NonNull MessageStore messageStore) {
+		mContext = context;
+		mBean = bean;
+		mMessageStore = messageStore;
+		mWakeLock = MqttUtils.getWakeLock(context, getClass().getName() + " " + bean.getClientId() + " " + "on host " + bean.getServerURI());
+		mAlarmPingSender = new AlarmPingSender(mContext);
 		try {
-			if (mPersistence == null) {
-				File myDir = mService.getExternalFilesDir(TAG);
-				if (myDir == null) {
-					myDir =  mService.getDir(TAG, Context.MODE_PRIVATE);
-					if(myDir == null){// 无法获取存储目录
-						EventBus.getDefault().post(ConnectionEvent.createError(activityToken, "can not get files dir", new MqttPersistenceException()));
-
-						resultBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE, "Error! No external and internal storage available");
-						resultBundle.putSerializable(MqttServiceConstants.CALLBACK_EXCEPTION, new MqttPersistenceException());
-						mService.sendBroadcastToClient(mClientKey, Status.ERROR, resultBundle);
-						return;
-					}
-				}
-				mPersistence = new MqttDefaultFilePersistence(myDir.getAbsolutePath());
-			}
-
-
-			if (mClient == null) {
-				mAlarmPingSender = new AlarmPingSender(mService);
-				mClient = new MqttAsyncClient(mServerURI, mClientId, mPersistence, mAlarmPingSender);
-				mClient.setCallback(this);
-			}
-
-			if (isConnecting) {
-				Log.d(TAG, "now connecting");
-				return;
-			}
-			if (!isDisconnected) {
-				Log.d(TAG, "client is connected");
-				doAfterConnectSuccess(resultBundle);
-				return;
-			}
-			Log.d(TAG, "mClient != null and the client is not connected");
-			Log.d(TAG, "Do Real connect!");
-			setConnectingState(true);
-			mClient.connect(mConnectOptions, new IMqttActionListener() {
-
-				@Override
-				public void onSuccess(IMqttToken asyncActionToken) {
-					doAfterConnectSuccess(resultBundle);
-					Log.d(TAG, "connect success!");
-				}
-
-				@Override
-				public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-					resultBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE, exception.getLocalizedMessage());
-					resultBundle.putSerializable(MqttServiceConstants.CALLBACK_EXCEPTION, exception);
-					Log.e(TAG, "connect fail, call connect to reconnect.reason:" + exception.getMessage());
-					doAfterConnectFail(resultBundle);
-				}
-			});
-		} catch (Exception e) {
-			Log.e(TAG, "Exception occurred attempting to connect: " + e.getMessage());
-			setConnectingState(false);
-			handleException(resultBundle, e);
+			mClient = new MqttAsyncClient(bean.getServerURI(), bean.getClientId(), persistence, mAlarmPingSender);
+			mClient.setCallback(this);
+		}catch (Exception e){
+			e.printStackTrace();
+			EventBus.getDefault().post(MqttEvent.createFail(mBean.getClientKey(), MqttAction.ACTION_CREATE_CLIENT, "create MqttAsyncClient fail",e));
 		}
 	}
+
+	/** 连接服务器 */
+	public void connect() {
+		if (mClient == null) {
+			EventBus.getDefault().post(MqttEvent.createConnectFail(mBean.getClientKey(), "client is null", new NullPointerException()));
+			return;
+		}
+		Log.d(TAG, "start connect {" + mBean.getClientKey() + "}");
+		if (mBean.getConnectOptions().isCleanSession()) { // 如果是新的会话则清空数据库缓存
+			mMessageStore.clearAllMessages(mBean.getClientKey());
+		}
+
+		if (isConnecting) {
+			Log.d(TAG, "now connecting");
+			return;
+		}
+		if (mClient.isConnected()) {
+			Log.d(TAG, "client is connected");
+			connectSuccess();
+			return;
+		}
+		Log.d(TAG, "start connect!");
+		isConnecting = true;
+		try {
+			mClient.connect(mBean.getConnectOptions(), mConnectActionListener);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			isConnecting = false;
+			EventBus.getDefault().post(MqttEvent.createConnectFail(mBean.getClientKey(), "connect fail", e));
+		}
+	}
+
+	private final IMqttActionListener mConnectActionListener = new IMqttActionListener() {
+		@Override
+		public void onSuccess(IMqttToken asyncActionToken) {
+			Log.d(TAG, "connect success!");
+			connectSuccess();
+		}
+
+		@Override
+		public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+			Log.e(TAG, "connect fail, call connect to reconnect.reason:" + exception.getMessage());
+			connectFail("connect failure", exception);
+		}
+	};
 
 	/** 连接成功 */
-	private void doAfterConnectSuccess(final Bundle resultBundle) {
+	private void connectSuccess() {
 		MqttUtils.acquireWakeLock(mWakeLock);
-		mService.sendBroadcastToClient(mClientKey, Status.OK, resultBundle);
+		EventBus.getDefault().post(MqttEvent.createConnectSuccess(mBean.getClientKey()));
 		deliverBacklog();
-		setConnectingState(false);
-		isDisconnected = false;
+		isConnecting = false;
 		MqttUtils.releaseWakeLock(mWakeLock);
-	}
-
-
-	/** 连接失败 */
-	private void doAfterConnectFail(final Bundle resultBundle){
-		MqttUtils.acquireWakeLock(mWakeLock);
-		isDisconnected = true;
-		setConnectingState(false);
-		mService.sendBroadcastToClient(mClientKey, Status.ERROR, resultBundle);
-		MqttUtils.releaseWakeLock(mWakeLock);
-	}
-
-	/** 处理异常 */
-	private void handleException(final Bundle resultBundle, Exception e) {
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE, e.getLocalizedMessage());
-		resultBundle.putSerializable(MqttServiceConstants.CALLBACK_EXCEPTION, e);
-		mService.sendBroadcastToClient(mClientKey, Status.ERROR, resultBundle);
 	}
 
 	/**
 	 * 将数据库缓存的到达消息全部返回给用户
 	 */
 	private void deliverBacklog() {
-		ArrayList<DbStoredData> backlog = mService.mMessageStore.getAllMessages(mClientKey);
+		ArrayList<DbStoredData> backlog = mMessageStore.getAllMessages(mBean.getClientKey());
 		for (DbStoredData data : backlog) {
-			Bundle resultBundle = messageToBundle(data.messageId, data.topic, data.message);
-			resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.MESSAGE_ARRIVED_ACTION);
-			mService.sendBroadcastToClient(mClientKey, Status.OK, resultBundle);
+			EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), data));
 		}
 	}
 
-	/**
-	 * 创建消息的Bundle
-	 * @param messageId 消息ID
-	 * @param topic 主题
-	 * @param message 消息对象
-	 * @return the bundle
-	 */
-	private Bundle messageToBundle(String messageId, String topic, MqttMessage message) {
-		Bundle result = new Bundle();
-		result.putString(MqttServiceConstants.CALLBACK_MESSAGE_ID, messageId);
-		result.putString(MqttServiceConstants.CALLBACK_DESTINATION_NAME, topic);
-		result.putParcelable(MqttServiceConstants.CALLBACK_MESSAGE_PARCEL, new ParcelableMqttMessage(message));
-		return result;
+	/** 连接失败 */
+	private void connectFail(String errorMsg, Throwable e){
+		MqttUtils.acquireWakeLock(mWakeLock);
+		isConnecting = false;
+		EventBus.getDefault().post(MqttEvent.createConnectFail(mBean.getClientKey(), errorMsg, e));
+		MqttUtils.releaseWakeLock(mWakeLock);
 	}
-	
-	/**
-	 * 关闭客户端
-	 */
+
+	/** 关闭客户端 */
 	void close() {
-		Log.d(TAG, "close()");
+		Log.d(TAG, "close client");
 		try {
 			if (mClient != null) {
 				mClient.close();
 			}
-		} catch (MqttException e) {
-			// Pass a new bundle, let handleException stores error messages.
-			handleException(new Bundle(), e);
+			EventBus.getDefault().post(MqttEvent.createSuccess(mBean.getClientKey(), MqttAction.ACTION_CLOSE));
+		} catch (Exception e) {
+			e.printStackTrace();
+			EventBus.getDefault().post(MqttEvent.createFail(mBean.getClientKey(), MqttAction.ACTION_CLOSE, "close client fail", e));
 		}
 	}
 
@@ -290,48 +184,42 @@ public class MqttConnection implements MqttCallbackExtended {
 	 * 断开连接
 	 */
 	public void disconnect() {
-		disconnect(-1, "");
+		disconnect(-1);
 	}
 
 	/**
 	 * 断开连接
 	 * @param quiesceTimeout 在断开连接之前允许完成现有工作的时间（以毫秒为单位）。 值为零或更低意味着客户端不会停顿。
-	 * @param activityToken 票据
 	 */
-	public void disconnect(long quiesceTimeout, @NonNull String activityToken) {
-		Log.d(TAG, "mqtt disconnect");
-		isDisconnected = true;
-		final Bundle resultBundle = new Bundle();
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN, activityToken);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.DISCONNECT_ACTION);
-		if ((mClient != null) && (mClient.isConnected())) {
-			IMqttActionListener listener = new DefMqttActionListener(mClientKey, resultBundle, mService);
-			try {
-				if (quiesceTimeout > 0) {
-					mClient.disconnect(quiesceTimeout, null, listener);
-				} else {
-					mClient.disconnect(null, listener);
-				}
-			} catch (Exception e) {
-				handleException(resultBundle, e);
+	public void disconnect(long quiesceTimeout) {
+		Log.d(TAG, "mqtt disconnect {" + mBean.getClientKey() + "}");
+		if (mClient == null) {
+			EventBus.getDefault().post(MqttEvent.createFail(mBean.getClientKey(), MqttAction.ACTION_DISCONNECT, "client is null", new NullPointerException()));
+			return;
+		}
+		if (!mClient.isConnected()) {
+			EventBus.getDefault().post(MqttEvent.createSuccess(mBean.getClientKey(), MqttAction.ACTION_DISCONNECT));
+			return;
+		}
+		Log.d(TAG, "start disconnect!");
+		IMqttActionListener listener = new DisconnectMqttEventActionListener(mBean.getClientKey(), "disconnect failure");
+		try {
+			if (quiesceTimeout > 0) {
+				mClient.disconnect(quiesceTimeout, null, listener);
+			} else {
+				mClient.disconnect(null, listener);
 			}
-		} else {
-			resultBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE, NOT_CONNECTED);
-			Log.e(MqttServiceConstants.DISCONNECT_ACTION, NOT_CONNECTED);
-			mService.sendBroadcastToClient(mClientKey, Status.ERROR, resultBundle);
+		} catch (Exception e) {
+			e.printStackTrace();
+			EventBus.getDefault().post(MqttEvent.createFail(mBean.getClientKey(), MqttAction.ACTION_DISCONNECT, "disconnect fail", e));
 		}
-
-		if (mConnectOptions != null && mConnectOptions.isCleanSession()) {
-			// assume we'll clear the stored messages at this point
-			mService.mMessageStore.clearAllMessages(mClientKey);
+		if (mBean.getConnectOptions().isCleanSession()) {
+			mMessageStore.clearAllMessages(mBean.getClientKey());
 		}
-
 		MqttUtils.releaseWakeLock(mWakeLock);
 	}
 
-	/**
-	 * 是否已连接
-	 */
+	/** 是否已连接 */
 	public boolean isConnected() {
 		return mClient != null && mClient.isConnected();
 	}
@@ -340,32 +228,25 @@ public class MqttConnection implements MqttCallbackExtended {
 	 * 向主题发送消息
 	 * @param topic 主题名称
 	 * @param message 消息对象
-	 * @param activityToken 票据
 	 */
-	public IMqttDeliveryToken publish(String topic, MqttMessage message, String activityToken) {
-		final Bundle resultBundle = new Bundle();
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.SEND_ACTION);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN, activityToken);
-
+	public IMqttDeliveryToken publish(String topic, MqttMessage message) {
+		if (mClient == null) {
+			EventBus.getDefault().post(MqttEvent.createPublishFail(mBean.getClientKey(), topic, "client is null", new NullPointerException()));
+			return null;
+		}
+		IMqttActionListener listener =  new PublishMqttEventActionListener(mBean.getClientKey(), "publish failure", topic, message);
 		try {
-			if (mClient != null && mClient.isConnected()) {
-				IMqttDeliveryToken sendToken = mClient.publish(topic, message, null, new DefMqttActionListener(mClientKey, resultBundle, mService));
-				storeSendDetails(topic, message, sendToken, activityToken);
-				return sendToken;
+			if (mClient.isConnected()) {
+				return mClient.publish(topic, message, null, listener);
 			}
-			if (mClient != null && this.bufferOpts != null && this.bufferOpts.isBufferEnabled()) {
+			if (this.bufferOpts != null && this.bufferOpts.isBufferEnabled()) {
 				// 虽然客户端未连接，但是缓冲已启用，也允许发送消息
-				IMqttDeliveryToken sendToken = mClient.publish(topic, message, null, new DefMqttActionListener(mClientKey, resultBundle, mService));
-				storeSendDetails(topic, message, sendToken, activityToken);
-				return sendToken;
+				return mClient.publish(topic, message, null, listener);
 			}
-			Log.i(TAG, "client is not connected, can not send message");
-			resultBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE, NOT_CONNECTED);
-			Log.e(MqttServiceConstants.SEND_ACTION, NOT_CONNECTED);
-			mService.sendBroadcastToClient(mClientKey, Status.ERROR, resultBundle);
+			EventBus.getDefault().post(MqttEvent.createPublishFail(mBean.getClientKey(), topic, "client is not connected, can not send message", new RuntimeException()));
 		}catch (Exception e){
-		    e.printStackTrace();
-			handleException(resultBundle, e);
+			e.printStackTrace();
+			EventBus.getDefault().post(MqttEvent.createPublishFail(mBean.getClientKey(), topic, "publish fail", e));
 		}
 		return null;
 	}
@@ -374,59 +255,61 @@ public class MqttConnection implements MqttCallbackExtended {
 	 * 订阅主题
 	 * @param topic            主题名称数组
 	 * @param qos              服务质量数组 0，1，2
-	 * @param activityToken    票据
 	 * @param messageListeners 消息监听器
 	 */
-	public void subscribe(String[] topic, int[] qos, String activityToken, IMqttMessageListener[] messageListeners) {
-		Log.d(TAG, "subscribe({" + Arrays.toString(topic) + "}," + Arrays.toString(qos) + ", {" + activityToken + "}");
-		final Bundle resultBundle = new Bundle();
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.SUBSCRIBE_ACTION);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN, activityToken);
-
-		if(mClient != null && mClient.isConnected()){
-			try {
-				if (messageListeners == null || messageListeners.length == 0) {
-					mClient.subscribe(topic, qos, null, new DefMqttActionListener(mClientKey, resultBundle, mService));
-				} else {
-					mClient.subscribe(topic, qos, messageListeners);
-				}
-			} catch (Exception e){
-				handleException(resultBundle, e);
-			}
+	public void subscribe(String[] topic, int[] qos, @Nullable IMqttMessageListener[] messageListeners) {
+		Log.d(TAG, "subscribe({" + Arrays.toString(topic) + "}," + Arrays.toString(qos));
+		if (mClient == null) {
+			EventBus.getDefault().post(MqttEvent.createSubscribeFail(mBean.getClientKey(), topic, "client is null", new NullPointerException()));
 			return;
 		}
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE, NOT_CONNECTED);
-		Log.e(TAG, "subscribe " + NOT_CONNECTED);
-		mService.sendBroadcastToClient(mClientKey, Status.ERROR, resultBundle);
+		if (!mClient.isConnected()) {
+			EventBus.getDefault().post(MqttEvent.createSubscribeFail(mBean.getClientKey(), topic, "client is disconnect", new IllegalStateException()));
+			return;
+		}
+		IMqttActionListener listener = new SubscribeMqttEventActionListener(mBean.getClientKey(), "subscribe failure", topic);
+		try {
+			if (messageListeners == null || messageListeners.length == 0) {
+				mClient.subscribe(topic, qos, null, listener);
+			} else {
+				mClient.subscribe(topic, qos, messageListeners);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			EventBus.getDefault().post(MqttEvent.createSubscribeFail(mBean.getClientKey(), topic, "subscribe fail", new IllegalStateException()));
+		}
 	}
 
 	/**
 	 * 取消订阅主题
 	 * @param topic         主题名称数组
-	 * @param activityToken 票据
 	 */
-	void unsubscribe(String[] topic, String activityToken) {
-		Log.d(TAG, "unsubscribe({" + Arrays.toString(topic) + "}, {" + activityToken + "})");
-		final Bundle resultBundle = new Bundle();
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.UNSUBSCRIBE_ACTION);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN, activityToken);
-		if (mClient != null && mClient.isConnected()) {
-			try {
-				mClient.unsubscribe(topic, null, new DefMqttActionListener(mClientKey, resultBundle, mService));
-			} catch (Exception e) {
-				handleException(resultBundle, e);
-			}
+	void unsubscribe(String[] topic) {
+		Log.d(TAG, "unsubscribe({" + Arrays.toString(topic) );
+
+		if (mClient == null) {
+			EventBus.getDefault().post(MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topic, "client is null", new NullPointerException()));
 			return;
 		}
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE, NOT_CONNECTED);
-		Log.e(TAG, "unsubscribe " + NOT_CONNECTED);
-		mService.sendBroadcastToClient(mClientKey, Status.ERROR, resultBundle);
+		if (!mClient.isConnected()) {
+			EventBus.getDefault().post(MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topic, "client is disconnect", new IllegalStateException()));
+			return;
+		}
+		try {
+			mClient.unsubscribe(topic, null, new UnsubscribeMqttEventActionListener(mBean.getClientKey(), "unsubscribe failure", topic));
+		} catch (Exception e) {
+			e.printStackTrace();
+			EventBus.getDefault().post(MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topic, "unsubscribe fail", new IllegalStateException()));
+		}
 	}
 
 	/**
 	 * 获取IMqttDeliveryToken数组
 	 */
 	public IMqttDeliveryToken[] getPendingDeliveryTokens() {
+		if (mClient == null) {
+			return null;
+		}
 		return mClient.getPendingDeliveryTokens();
 	}
 
@@ -439,9 +322,12 @@ public class MqttConnection implements MqttCallbackExtended {
 	@Override
 	public void connectionLost(@Nullable Throwable why) {
 		Log.d(TAG, "connectionLost(" + why + ")");
-		isDisconnected = true;
+		EventBus.getDefault().post(MqttEvent.createConnectionLost(mBean.getClientKey(), why));
+		if (mClient == null){
+			return;
+		}
 		try {
-			if(!this.mConnectOptions.isAutomaticReconnect()) {
+			if(!mBean.getConnectOptions().isAutomaticReconnect()) {
 				mClient.disconnect();//没有开启自动重连则手动断开连接
 			} else {
 				mAlarmPingSender.schedule(100);
@@ -449,52 +335,23 @@ public class MqttConnection implements MqttCallbackExtended {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
-		Bundle resultBundle = new Bundle();
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.ON_CONNECTION_LOST_ACTION);
-		if (why != null) {
-			resultBundle.putString(MqttServiceConstants.CALLBACK_ERROR_MESSAGE, why.getMessage());
-			if (why instanceof MqttException) {
-				resultBundle.putSerializable(MqttServiceConstants.CALLBACK_EXCEPTION, why);
-			}
-			resultBundle.putString(MqttServiceConstants.CALLBACK_EXCEPTION_STACK, Log.getStackTraceString(why));
-		}
-		mService.sendBroadcastToClient(mClientKey, Status.OK, resultBundle);
 		MqttUtils.releaseWakeLock(mWakeLock);
 	}
 
 
 	@Override
 	public void connectComplete(boolean reconnect, String serverURI) {
-		Bundle resultBundle = new Bundle();
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.CONNECT_EXTENDED_ACTION);
-		resultBundle.putBoolean(MqttServiceConstants.CALLBACK_RECONNECT, reconnect);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_SERVER_URI, serverURI);
-		mService.sendBroadcastToClient(mClientKey, Status.OK, resultBundle);
+		EventBus.getDefault().post(MqttEvent.createConnectComplete(mBean.getClientKey(), reconnect, serverURI));
 	}
 
 	/**
-	 * 消息已传递
+	 * 发送的消息已到达
 	 * @param messageToken 消息令牌
 	 */
 	@Override
 	public void deliveryComplete(IMqttDeliveryToken messageToken) {
 		Log.d(TAG, "deliveryComplete(" + messageToken + ")");
-
-		MqttMessage message = mSavedSentMessages.remove(messageToken);
-		if (message != null) {
-			String topic = mSavedTopics.remove(messageToken);
-			String activityToken = mSavedActivityTokens.remove(messageToken);
-
-			Bundle resultBundle = messageToBundle(null, topic, message);
-			if (activityToken != null) {
-				resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.SEND_ACTION);
-				resultBundle.putString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN, activityToken);
-				mService.sendBroadcastToClient(mClientKey, Status.OK, resultBundle);
-			}
-			resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.MESSAGE_DELIVERED_ACTION);
-			mService.sendBroadcastToClient(mClientKey, Status.OK, resultBundle);
-		}
+		EventBus.getDefault().post(MqttEvent.createDeliveryComplete(mBean.getClientKey(), messageToken));
 	}
 
 	/**
@@ -505,129 +362,75 @@ public class MqttConnection implements MqttCallbackExtended {
 	@Override
 	public void messageArrived(String topic, MqttMessage message) {
 		Log.d(TAG, "messageArrived(" + topic + ",{" + message.toString() + "})");
-		String messageId = mService.mMessageStore.saveMessage(mClientKey, topic, message);
-		Bundle resultBundle = messageToBundle(messageId, topic, message);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.MESSAGE_ARRIVED_ACTION);
-		resultBundle.putString(MqttServiceConstants.CALLBACK_MESSAGE_ID, messageId);
-		mService.sendBroadcastToClient(mClientKey, Status.OK, resultBundle);
+		String messageId = mMessageStore.saveMessage(mBean.getClientKey(), topic, message);
+		DbStoredData data = new DbStoredData(messageId, mBean.getClientKey(), topic,message);
+		EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), data));
 	}
 	/*-------------------------------------- 实现MqttCallbackExtended ----------------------------------------------------*/
 
 
 	/**
-	 * 关键信息存储
-	 * @param topic 主题
-	 * @param msg 消息对象
-	 * @param messageToken 票据
-	 * @param activityToken  票据
-	 */
-	private void storeSendDetails(final String topic, final MqttMessage msg, final IMqttDeliveryToken messageToken, final String activityToken) {
-		mSavedTopics.put(messageToken, topic);
-		mSavedSentMessages.put(messageToken, msg);
-		mSavedActivityTokens.put(messageToken, activityToken);
-	}
-
-	/**
 	 * 设置客户端离线
 	 */
 	public void offline() {
-		if (!isDisconnected && !isCleanSession) {
-			connectionLost(new Exception("Android offline"));
+		if (mClient == null){
+			return;
+		}
+		if (mClient.isConnected() && !mBean.getConnectOptions().isCleanSession()) {
+			connectionLost(new NetworkErrorException("mqtt offline"));
 		}
 	}
 	
-	/**
-	* 重连
-	*/
+	/** 重连 */
 	synchronized void reconnect() {
-
 		if (mClient == null) {
-			Log.e(TAG,"client is null");
+			Log.e(TAG, "client is null");
 			return;
 		}
 
 		if (isConnecting) {
 			Log.d(TAG, "the client is connecting");
-			return ;
+			return;
 		}
-		
-		if(!MqttUtils.isOnline(mService)){
+
+		if (!MqttUtils.isOnline(mContext)) {
 			Log.d(TAG, "the network is offline, cannot reconnect");
 			return;
 		}
 
-		if(mConnectOptions.isAutomaticReconnect()){ //开启自动重连
+		if(mBean.getConnectOptions().isAutomaticReconnect()){ //开启自动重连
 			Log.i(TAG, "start automatic reconnect");
-
 			try {
 				mClient.reconnect();
-			} catch (MqttException ex){
-				Log.e(TAG, "Exception occurred attempting to reconnect: " + ex.getMessage());
-				setConnectingState(false);
-				final Bundle resultBundle = new Bundle();
-				resultBundle.putString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN, mReconnectActivityToken);
-				resultBundle.putString(MqttServiceConstants.CALLBACK_INVOCATION_CONTEXT, null);
-				resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.CONNECT_ACTION);
-				handleException(resultBundle, ex);
+			} catch (Exception e){
+				e.printStackTrace();
+				isConnecting = false;
+				EventBus.getDefault().post(MqttEvent.createConnectFail(mBean.getClientKey(), "reconnect fail", e));
 			}
 			return;
 		}
 
-
-		if (isDisconnected && !isCleanSession) { // 手动重连
-			Log.d(TAG,"Do Real Reconnect!");
-			final Bundle resultBundle = new Bundle();
-			resultBundle.putString(MqttServiceConstants.CALLBACK_ACTIVITY_TOKEN, mReconnectActivityToken);
-			resultBundle.putString(MqttServiceConstants.CALLBACK_INVOCATION_CONTEXT, null);
-			resultBundle.putString(MqttServiceConstants.CALLBACK_ACTION, MqttServiceConstants.CONNECT_ACTION);
-			IMqttActionListener listener = new DefMqttActionListener(mClientKey, resultBundle, mService) {
-				@Override
-				public void onSuccess(IMqttToken asyncActionToken) {
-					// since the device's cpu can go to sleep, acquire a wakelock and drop it later.
-					Log.d(TAG, "Reconnect Success!");
-					Log.d(TAG, "DeliverBacklog when reconnect.");
-					doAfterConnectSuccess(resultBundle);
-				}
-
-				@Override
-				public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-					super.onFailure(asyncActionToken, exception);
-					doAfterConnectFail(resultBundle);
-				}
-			};
-			try {
-				mClient.connect(mConnectOptions, null, listener);
-				setConnectingState(true);
-			} catch (Exception e){
-				Log.e(TAG, "cannot reconnect to remote server", e);
-				setConnectingState(false);
-				handleException(resultBundle, e);
-			}
+		if (!mClient.isConnected() && !mBean.getConnectOptions().isCleanSession()) { // 手动重连
+			connect();
 		}
 	}
 	
-	/**
-	 * 设置是否连接中
-	 * @param isConnecting 是否连接中
-	 */
-	private synchronized void setConnectingState(boolean isConnecting){
-		this.isConnecting = isConnecting; 
-	}
-
 	/**
 	 * 设置断连缓冲配置项
 	 * @param bufferOpts 断连缓冲配置项
 	 */
 	public void setBufferOpts(DisconnectedBufferOptions bufferOpts) {
 		this.bufferOpts = bufferOpts;
-		mClient.setBufferOpts(bufferOpts);
+		if (mClient != null){
+			mClient.setBufferOpts(bufferOpts);
+		}
 	}
 
 	/**
 	 * 获取断连缓冲配置项
 	 */
 	public int getBufferedMessageCount(){
-		return mClient.getBufferedMessageCount();
+		return mClient != null ? mClient.getBufferedMessageCount() : 0;
 	}
 
 	/**
@@ -635,7 +438,7 @@ public class MqttConnection implements MqttCallbackExtended {
 	 * @param bufferIndex 索引
 	 */
 	public MqttMessage getBufferedMessage(int bufferIndex){
-		return mClient.getBufferedMessage(bufferIndex);
+		return mClient != null ? mClient.getBufferedMessage(bufferIndex) : null;
 	}
 
 	/**
@@ -643,6 +446,8 @@ public class MqttConnection implements MqttCallbackExtended {
 	 * @param bufferIndex 索引
 	 */
 	public void deleteBufferedMessage(int bufferIndex){
-		mClient.deleteBufferedMessage(bufferIndex);
+		if (mClient != null){
+			mClient.deleteBufferedMessage(bufferIndex);
+		}
 	}
 }

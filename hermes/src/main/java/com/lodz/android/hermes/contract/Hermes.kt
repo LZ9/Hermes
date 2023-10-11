@@ -1,6 +1,7 @@
 package com.lodz.android.hermes.contract
 
 import android.content.Context
+import org.eclipse.paho.android.service.contract.ServiceStartActionListener
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import java.nio.ByteBuffer
 
@@ -12,7 +13,7 @@ import java.nio.ByteBuffer
 interface Hermes {
 
     /** 初始化，上下文[context]，后台地址[url]，客户端id[clientId]，连接配置[options] */
-    fun init(context: Context?, url: String, clientId: String?, options: MqttConnectOptions?)
+    fun init(context: Context?, url: String, clientId: String?, options: MqttConnectOptions?, listener: ServiceStartActionListener?)
 
     /** 设置订阅主题，订阅主题列表[topics] */
     fun setSubTopic(topics: List<String>?)
@@ -43,6 +44,9 @@ interface Hermes {
 
     /** 断开连接 */
     fun disconnect()
+
+    /** 释放资源 */
+    fun release()
 
     /** 是否已连接 */
     fun isConnected(): Boolean

@@ -34,7 +34,6 @@ import java.util.UUID;
  */
 public class MessageStoreImpl implements MessageStore {
 
-    // TAG used for indentify trace data etc.
     private static final String TAG = "MessageStoreImpl";
 
     private final MQTTDatabaseHelper mqttDb;

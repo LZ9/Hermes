@@ -1,4 +1,4 @@
-package org.eclipse.paho.android.service;
+package org.eclipse.paho.android.service.event;
 
 /**
  * 接受消息的确认模式

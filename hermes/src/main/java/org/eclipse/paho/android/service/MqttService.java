@@ -44,7 +44,10 @@ import java.util.HashMap;
 
 public class MqttService extends Service {
 
-    static final String TAG = "MqttService";
+    public static final String TAG = "MqttService";
+
+    // the name of the table in the database to which we will save messages
+    private static final String FILE_PERSISTENCE_DIR_NAME = "MqttConnection";
 
     /** 数据库操作接口 */
     public MessageStore mMessageStore;
@@ -160,9 +163,9 @@ public class MqttService extends Service {
             throw new IllegalArgumentException("clientId is empty");
         }
         if (persistence == null) {
-            File myDir = getExternalFilesDir(MqttServiceConstants.FILE_PERSISTENCE_DIR_NAME);
+            File myDir = getExternalFilesDir(FILE_PERSISTENCE_DIR_NAME);
             if (myDir == null) {
-                myDir = getDir(MqttServiceConstants.FILE_PERSISTENCE_DIR_NAME, Context.MODE_PRIVATE);
+                myDir = getDir(FILE_PERSISTENCE_DIR_NAME, Context.MODE_PRIVATE);
             }
             if (myDir == null) {
                 throw new IllegalArgumentException("cannot get file dir");

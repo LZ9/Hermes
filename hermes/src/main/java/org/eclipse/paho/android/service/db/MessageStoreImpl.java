@@ -23,7 +23,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
 import android.util.Log;
 
-import org.eclipse.paho.android.service.MqttServiceConstants;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.util.ArrayList;
@@ -56,16 +55,16 @@ public class MessageStoreImpl implements MessageStore {
         SQLiteDatabase db = mqttDb.getWritableDatabase();
         ContentValues values = new ContentValues();
         String id = UUID.randomUUID().toString();
-        values.put(MqttServiceConstants.DB_COLUMN_MESSAGE_ID, id);
-        values.put(MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE, clientKey);
-        values.put(MqttServiceConstants.DB_COLUMN_DESTINATION_NAME, topic);
-        values.put(MqttServiceConstants.DB_COLUMN_PAYLOAD, message.getPayload());
-        values.put(MqttServiceConstants.DB_COLUMN_QOS, message.getQos());
-        values.put(MqttServiceConstants.DB_COLUMN_RETAINED, message.isRetained());
-        values.put(MqttServiceConstants.DB_COLUMN_DUPLICATE, message.isDuplicate());
-        values.put(MqttServiceConstants.DB_COLUMN_MTIMESTAMP, System.currentTimeMillis());
+        values.put(MQTTDatabaseHelper.DB_COLUMN_MESSAGE_ID, id);
+        values.put(MQTTDatabaseHelper.DB_COLUMN_CLIENT_HANDLE, clientKey);
+        values.put(MQTTDatabaseHelper.DB_COLUMN_DESTINATION_NAME, topic);
+        values.put(MQTTDatabaseHelper.DB_COLUMN_PAYLOAD, message.getPayload());
+        values.put(MQTTDatabaseHelper.DB_COLUMN_QOS, message.getQos());
+        values.put(MQTTDatabaseHelper.DB_COLUMN_RETAINED, message.isRetained());
+        values.put(MQTTDatabaseHelper.DB_COLUMN_DUPLICATE, message.isDuplicate());
+        values.put(MQTTDatabaseHelper.DB_COLUMN_MTIMESTAMP, System.currentTimeMillis());
         try {
-            db.insertOrThrow(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, null, values);
+            db.insertOrThrow(MQTTDatabaseHelper.DB_ARRIVED_MESSAGE_TABLE_NAME, null, values);
         }catch (Exception e){
             e.printStackTrace();
             Log.e(TAG, "save message error", e);
@@ -90,7 +89,7 @@ public class MessageStoreImpl implements MessageStore {
         selectionArgs[1] = clientKey;
 
         try {
-            rows = db.delete(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, MqttServiceConstants.DB_COLUMN_MESSAGE_ID + "=? AND " + MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE + "=?", selectionArgs);
+            rows = db.delete(MQTTDatabaseHelper.DB_ARRIVED_MESSAGE_TABLE_NAME, MQTTDatabaseHelper.DB_COLUMN_MESSAGE_ID + "=? AND " + MQTTDatabaseHelper.DB_COLUMN_CLIENT_HANDLE + "=?", selectionArgs);
         } catch (SQLException e) {
             e.printStackTrace();
             Log.e(TAG, "delete message error", e);
@@ -114,31 +113,31 @@ public class MessageStoreImpl implements MessageStore {
         Cursor c = null;
         try {
             if (TextUtils.isEmpty(clientKey)) {
-                c = db.query(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME,
+                c = db.query(MQTTDatabaseHelper.DB_ARRIVED_MESSAGE_TABLE_NAME,
                         null,
                         null,
                         null,
                         null,
                         null,
-                        MqttServiceConstants.DB_COLUMN_MTIMESTAMP + " ASC");
+                        MQTTDatabaseHelper.DB_COLUMN_MTIMESTAMP + " ASC");
             } else {
-                c = db.query(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME,
+                c = db.query(MQTTDatabaseHelper.DB_ARRIVED_MESSAGE_TABLE_NAME,
                         null,
-                        MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE + "=?",
+                        MQTTDatabaseHelper.DB_COLUMN_CLIENT_HANDLE + "=?",
                         selectionArgs,
                         null,
                         null,
-                        MqttServiceConstants.DB_COLUMN_MTIMESTAMP + " ASC");
+                        MQTTDatabaseHelper.DB_COLUMN_MTIMESTAMP + " ASC");
             }
             boolean hasNext = c.moveToFirst();
             while (hasNext){
-                String messageId = c.getString(getIndex(c, MqttServiceConstants.DB_COLUMN_MESSAGE_ID));
-                String clientHandle = c.getString(getIndex(c, MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE));
-                String topic = c.getString(getIndex(c, MqttServiceConstants.DB_COLUMN_DESTINATION_NAME));
-                byte[] payload = c.getBlob(getIndex(c, MqttServiceConstants.DB_COLUMN_PAYLOAD));
-                int qos = c.getInt(getIndex(c, MqttServiceConstants.DB_COLUMN_QOS));
-                boolean retained = Boolean.parseBoolean(c.getString(getIndex(c, MqttServiceConstants.DB_COLUMN_RETAINED)));
-                boolean dup = Boolean.parseBoolean(c.getString(getIndex(c, MqttServiceConstants.DB_COLUMN_DUPLICATE)));
+                String messageId = c.getString(getIndex(c, MQTTDatabaseHelper.DB_COLUMN_MESSAGE_ID));
+                String clientHandle = c.getString(getIndex(c, MQTTDatabaseHelper.DB_COLUMN_CLIENT_HANDLE));
+                String topic = c.getString(getIndex(c, MQTTDatabaseHelper.DB_COLUMN_DESTINATION_NAME));
+                byte[] payload = c.getBlob(getIndex(c, MQTTDatabaseHelper.DB_COLUMN_PAYLOAD));
+                int qos = c.getInt(getIndex(c, MQTTDatabaseHelper.DB_COLUMN_QOS));
+                boolean retained = Boolean.parseBoolean(c.getString(getIndex(c, MQTTDatabaseHelper.DB_COLUMN_RETAINED)));
+                boolean dup = Boolean.parseBoolean(c.getString(getIndex(c, MQTTDatabaseHelper.DB_COLUMN_DUPLICATE)));
 
                 MqttMessageHack message = new MqttMessageHack(payload);
                 message.setQos(qos);
@@ -175,11 +174,11 @@ public class MessageStoreImpl implements MessageStore {
         int rows = 0;
         try {
             if (TextUtils.isEmpty(clientKey)) {
-                rows = db.delete(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, null, null);
+                rows = db.delete(MQTTDatabaseHelper.DB_ARRIVED_MESSAGE_TABLE_NAME, null, null);
             }else {
                 String[] selectionArgs = new String[1];
                 selectionArgs[0] = clientKey;
-                rows = db.delete(MqttServiceConstants.DB_ARRIVED_MESSAGE_TABLE_NAME, MqttServiceConstants.DB_COLUMN_CLIENT_HANDLE + "=?", selectionArgs);
+                rows = db.delete(MQTTDatabaseHelper.DB_ARRIVED_MESSAGE_TABLE_NAME, MQTTDatabaseHelper.DB_COLUMN_CLIENT_HANDLE + "=?", selectionArgs);
             }
 
         } catch (Exception e) {

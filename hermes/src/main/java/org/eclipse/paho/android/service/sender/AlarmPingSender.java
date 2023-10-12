@@ -23,13 +23,15 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import org.eclipse.paho.android.service.MqttServiceConstants;
+import org.eclipse.paho.android.service.MqttService;
 import org.eclipse.paho.client.mqttv3.MqttPingSender;
 import org.eclipse.paho.client.mqttv3.internal.ClientComms;
 
 /** ping数据包发送器 */
 public class AlarmPingSender implements MqttPingSender {
 	private static final String TAG = "AlarmPingSender";
+
+	private static final String PING_SENDER = MqttService.TAG + ".pingSender.";
 
 	private ClientComms mClientComms;
 	private final Context mContext;
@@ -49,7 +51,7 @@ public class AlarmPingSender implements MqttPingSender {
 
 	@Override
 	public void start() {
-		String action = MqttServiceConstants.PING_SENDER + mClientComms.getClient().getClientId();
+		String action = AlarmPingSender.PING_SENDER + mClientComms.getClient().getClientId();
 		Log.d(TAG, "register AlarmReceiver to MqttService by action = " + action);
 		mContext.registerReceiver(mAlarmReceiver, new IntentFilter(action));
 		mPendingIntent = PendingIntent.getBroadcast(mContext, 0, new Intent(action), PendingIntent.FLAG_UPDATE_CURRENT);

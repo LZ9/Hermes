@@ -8,7 +8,7 @@
     <application>
         <!-- Mqtt Service -->
         <service
-            android:name="org.eclipse.paho.android.service.MqttService"
+            android:name=".mqtt.base.service.MqttService"
             android:exported="false" />
     </application>
 

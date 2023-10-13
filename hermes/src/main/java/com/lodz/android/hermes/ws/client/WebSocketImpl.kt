@@ -7,8 +7,8 @@ import com.lodz.android.hermes.mqtt.OnConnectListener
 import com.lodz.android.hermes.mqtt.OnSendListener
 import com.lodz.android.hermes.mqtt.OnSubscribeListener
 import com.lodz.android.hermes.mqtt.OnUnsubscribeListener
+import com.lodz.android.hermes.mqtt.base.contract.ServiceStartActionListener
 import kotlinx.coroutines.*
-import org.eclipse.paho.android.service.contract.ServiceStartActionListener
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.java_websocket.framing.CloseFrame
 import org.java_websocket.handshake.ServerHandshake

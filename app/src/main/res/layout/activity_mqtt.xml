@@ -63,15 +63,6 @@
                         android:inputType="text"
                         android:textSize="14sp" />
 
-                    <EditText
-                        android:id="@+id/subtopic_edit"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/mqtt_subtopic_hint"
-                        android:importantForAutofill="no"
-                        android:inputType="text"
-                        android:textSize="14sp" />
-
                 </LinearLayout>
 
                 <Button
@@ -217,21 +208,21 @@
                     android:orientation="horizontal">
 
                     <EditText
-                        android:id="@+id/add_topic_edit"
+                        android:id="@+id/sub_topic_edit"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:hint="@string/mqtt_add_topic_hint"
+                        android:hint="@string/mqtt_sub_topic_hint"
                         android:inputType="text"
                         android:textSize="14sp"
                         tools:ignore="Autofill" />
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/add_topic_btn"
+                        android:id="@+id/sub_topic_btn"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="5dp"
-                        android:text="@string/mqtt_add_topic"
+                        android:text="@string/mqtt_sub_topic"
                         android:textAllCaps="false"
                         android:textColor="@color/white" />
 

@@ -1,4 +1,6 @@
-package com.lodz.android.hermes.mqtt
+package com.lodz.android.hermes.mqtt.client
+
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 
 /**
  * 连接监听器
@@ -15,4 +17,7 @@ interface OnConnectListener {
 
     /** 连接丢失（连上后断开），异常[cause] */
     fun onConnectionLost(cause: Throwable)
+
+    /** 消息传递到服务端完成，票据[token] */
+    fun deliveryComplete(token: IMqttDeliveryToken?)
 }

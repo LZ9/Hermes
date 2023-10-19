@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.lodz.android.hermes.modules.HermesLog
-import com.lodz.android.hermes.mqtt.base.utils.MqttUtils
+import com.lodz.android.hermes.utils.HermesUtils
 import org.eclipse.paho.client.mqttv3.IMqttActionListener
 import org.eclipse.paho.client.mqttv3.IMqttToken
 import org.eclipse.paho.client.mqttv3.internal.ClientComms
@@ -21,25 +21,25 @@ class AlarmReceiver(private val comms: ClientComms?, context: Context) : Broadca
         private const val PING_WAKELOCK = "MqttService.client."
     }
 
-    private val mWakeLock = MqttUtils.getWakeLock(context, PING_WAKELOCK + comms?.client?.clientId)
+    private val mWakeLock = HermesUtils.getWakeLock(context, PING_WAKELOCK + comms?.client?.clientId)
 
     override fun onReceive(context: Context?, intent: Intent?) {
         HermesLog.d(TAG, "Sending Ping at : ${System.currentTimeMillis()}")
-        MqttUtils.acquireWakeLock(mWakeLock)
+        HermesUtils.acquireWakeLock(mWakeLock)
         val token = comms?.checkForActivity(object : IMqttActionListener {
             override fun onSuccess(asyncActionToken: IMqttToken?) {
                 HermesLog.d(TAG, "Success. Release lock(AlarmReceiver) at : ${System.currentTimeMillis()}")
-                MqttUtils.releaseWakeLock(mWakeLock)
+                HermesUtils.releaseWakeLock(mWakeLock)
             }
 
             override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                 val e = exception ?: RuntimeException()
                 HermesLog.e(TAG, "Failure. Release lock(AlarmReceiver) at : ${System.currentTimeMillis()}", e)
-                MqttUtils.releaseWakeLock(mWakeLock)
+                HermesUtils.releaseWakeLock(mWakeLock)
             }
         })
         if (token == null){
-            MqttUtils.releaseWakeLock(mWakeLock)
+            HermesUtils.releaseWakeLock(mWakeLock)
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.lodz.android.hermes.ws.client
 
 import org.java_websocket.handshake.ServerHandshake
+import java.nio.ByteBuffer
 
 /**
  * WebSocket监听器
@@ -9,9 +10,11 @@ import org.java_websocket.handshake.ServerHandshake
  */
 interface OnWebSocketListener {
 
-    fun onOpen(handshakedata: ServerHandshake?)
+    fun onOpen(handshakeData: ServerHandshake)
 
     fun onMessage(message: String)
+
+    fun onMessage(message: ByteBuffer)
 
     fun onClose(code: Int, reason: String, remote: Boolean)
 

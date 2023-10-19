@@ -1,49 +1,18 @@
 package com.lodz.android.hermes.contract
 
 import android.content.Context
-import com.lodz.android.hermes.mqtt.OnConnectListener
-import com.lodz.android.hermes.mqtt.OnSendListener
-import com.lodz.android.hermes.mqtt.OnSubscribeListener
-import com.lodz.android.hermes.mqtt.OnUnsubscribeListener
-import com.lodz.android.hermes.mqtt.base.contract.ServiceStartActionListener
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions
-import java.nio.ByteBuffer
 
 /**
- * 推送客户端
+ * 推送基础能力
  * @author zhouL
  * @date 2019/12/20
  */
 interface Hermes {
 
-    /** 初始化，上下文[context]，后台地址[url]，客户端id[clientId]，连接配置[options] */
-    fun init(context: Context?, url: String, clientId: String?, options: MqttConnectOptions?, listener: ServiceStartActionListener?)
+    /** 初始化，上下文[context] */
+    fun init(context: Context): Hermes
 
-    /** 设置订阅主题，订阅主题列表[topics] */
-    fun setSubTopic(topics: List<String>?)
-
-    /** 设置订阅监听器，监听器[listener] */
-    fun setOnSubscribeListener(listener: OnSubscribeListener?)
-
-    /** 设置解除订阅监听器，监听器[listener] */
-    fun setOnUnsubscribeListener(listener: OnUnsubscribeListener?)
-
-    /** 设置连接监听器，监听器[listener] */
-    fun setOnConnectListener(listener: OnConnectListener?)
-
-    /** 设置发送监听器，监听器[listener] */
-    fun setOnSendListener(listener: OnSendListener?)
-
-    /** 发送主题内容，主题[topic]，内容[content] */
-    fun sendTopic(topic: String, content: String)
-
-    /** 发送主题内容，主题[topic]，内容[data] */
-    fun sendTopic(topic: String, data: ByteArray)
-
-    /** 发送主题内容，主题[topic]，内容[bytes] */
-    fun sendTopic(topic: String, bytes: ByteBuffer)
-
-    /** 连接后台 */
+    /** 连接 */
     fun connect()
 
     /** 断开连接 */
@@ -55,21 +24,15 @@ interface Hermes {
     /** 是否已连接 */
     fun isConnected(): Boolean
 
-    /** 订阅主题 */
-    fun subscribeTopic()
-
-    /** 取消订阅主题列表[topics] */
-    fun unsubscribe(topics: List<String>?)
-
-    /** 获取已经订阅的主题 */
-    fun getSubscribeTopic(): List<String>
-
     /** 设置日志标签[tag] */
-    fun setTag(tag: String)
+    fun setLogTag(tag: String): Hermes
 
     /** 设置是否保持静默不接收消息提醒[isSilent] */
-    fun setSilent(isSilent: Boolean)
+    fun setSilent(isSilent: Boolean): Hermes
 
     /** 是否保持静默不接收消息提醒 */
     fun isSilent(): Boolean
+
+    /** 设置是否打印日志[isPrint] */
+    fun setPrintLog(isPrint: Boolean): Hermes
 }

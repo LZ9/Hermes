@@ -1,6 +1,7 @@
 package com.lodz.android.hermes.mqtt.base.bean.event
 
 import android.accounts.NetworkErrorException
+import com.lodz.android.hermes.mqtt.base.bean.eun.Ack
 import com.lodz.android.hermes.mqtt.base.bean.eun.MqttAction
 import com.lodz.android.hermes.mqtt.base.db.DbStoredData
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
@@ -25,6 +26,9 @@ class MqttEvent(
 
     /** 消息数据 */
     var data: DbStoredData? = null
+
+    /** 接受消息的确认模式 */
+    var ack: Ack? = null
 
     /** 是否重连 */
     var isReconnect = false
@@ -64,9 +68,10 @@ class MqttEvent(
 
 
         /** 创建消息到达事件 */
-        fun createMsgArrived(clientKey: String, data: DbStoredData): MqttEvent {
+        fun createMsgArrived(clientKey: String, data: DbStoredData, ack: Ack): MqttEvent {
             val event = MqttEvent(clientKey, MqttAction.ACTION_MSG_ARRIVED, RESULT_SUCCESS)
             event.data = data
+            event.ack = ack
             return event
         }
 

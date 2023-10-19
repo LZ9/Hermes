@@ -20,13 +20,12 @@ class MqttClient(
     options: MqttConnectOptions, // 连接配置
     private val persistence: MqttClientPersistence, // 持久层接口
     ackType: Ack, // 接受消息的确认模式
-    messageStore: MessageStore // 数据库操作接口
 ) : ClientInfoBean(clientKey, serverURI, clientId, options, ackType) {
 
     private val connection: MqttConnection
 
     init {
-        connection = MqttConnection(context, this, persistence, messageStore)
+        connection = MqttConnection(context, this, persistence)
     }
 
     fun getPersistence() = persistence

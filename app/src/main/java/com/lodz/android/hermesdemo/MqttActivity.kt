@@ -4,19 +4,24 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import com.lodz.android.corekt.anko.*
+import com.lodz.android.corekt.anko.append
+import com.lodz.android.corekt.anko.getColorCompat
+import com.lodz.android.corekt.anko.getListBySeparator
+import com.lodz.android.corekt.anko.toastShort
 import com.lodz.android.corekt.utils.DateUtils
-import com.lodz.android.hermes.contract.*
+import com.lodz.android.hermes.contract.HermesMqttClient
 import com.lodz.android.hermes.modules.HermesAgent
-import com.lodz.android.hermes.mqtt.OnConnectListener
-import com.lodz.android.hermes.mqtt.OnSendListener
-import com.lodz.android.hermes.mqtt.OnSubscribeListener
-import com.lodz.android.hermes.mqtt.OnUnsubscribeListener
+import com.lodz.android.hermes.mqtt.client.OnConnectListener
+import com.lodz.android.hermes.mqtt.client.OnSendListener
+import com.lodz.android.hermes.mqtt.client.OnSubscribeListener
+import com.lodz.android.hermes.mqtt.client.OnUnsubscribeListener
 import com.lodz.android.hermesdemo.databinding.ActivityMqttBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout
-import java.nio.ByteBuffer
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
+import org.eclipse.paho.client.mqttv3.MqttMessage
+import java.nio.charset.Charset
 
 /**
  * MQTT测试类
@@ -55,7 +60,7 @@ class MqttActivity : BaseActivity(){
     override fun getViewBindingLayout(): View = mBinding.root
 
     /** 推送客户端 */
-    private var mHermes: Hermes? = null
+    private var mHermes: HermesMqttClient? = null
 
     override fun findViews(savedInstanceState: Bundle?) {
         super.findViews(savedInstanceState)
@@ -99,11 +104,7 @@ class MqttActivity : BaseActivity(){
                 toastShort(R.string.mqtt_client_id_empty)
                 return@setOnClickListener
             }
-            var list: List<String> = ArrayList()
-            if (mBinding.subtopicEdit.text.isNotEmpty()) {
-                list = mBinding.subtopicEdit.text.toString().getListBySeparator(",")
-            }
-            create(mBinding.urlEdit.text.toString(), mBinding.clientIdEdit.text.toString(), list)
+            create(mBinding.urlEdit.text.toString(), mBinding.clientIdEdit.text.toString())
         }
 
         // 发送
@@ -120,7 +121,7 @@ class MqttActivity : BaseActivity(){
                 toastShort(R.string.mqtt_send_content_empty)
                 return@setOnClickListener
             }
-            mHermes?.sendTopic(mBinding.sendTopicEdit.text.toString(), mBinding.sendEdit.text.toString())
+            mHermes?.sendData(mBinding.sendTopicEdit.text.toString(), mBinding.sendEdit.text.toString())
         }
 
         // 清空日志按钮
@@ -148,17 +149,17 @@ class MqttActivity : BaseActivity(){
             mHermes?.setSilent(false)
         }
 
-        // 动态添加订阅主题
-        mBinding.addTopicBtn.setOnClickListener {
+        // 订阅主题
+        mBinding.subTopicBtn.setOnClickListener {
             if (mHermes == null || mHermes?.isConnected() == false) {
                 toastShort(R.string.mqtt_client_unconnected)
                 return@setOnClickListener
             }
-            if (mBinding.addTopicEdit.text.isEmpty()) {
+            if (mBinding.subTopicEdit.text.isEmpty()) {
                 toastShort(R.string.mqtt_add_topic_empty)
                 return@setOnClickListener
             }
-            mHermes?.setSubTopic(mBinding.addTopicEdit.text.toString().getListBySeparator(","))
+            mHermes?.subscribe(mBinding.subTopicEdit.text.toString().getListBySeparator(",").toTypedArray())
         }
 
         // 动态删除订阅主题
@@ -171,7 +172,7 @@ class MqttActivity : BaseActivity(){
                 toastShort(R.string.mqtt_remove_topic_empty)
                 return@setOnClickListener
             }
-            mHermes?.unsubscribe(mBinding.removeTopicEdit.text.toString().getListBySeparator(","))
+            mHermes?.unsubscribe(mBinding.removeTopicEdit.text.toString().getListBySeparator(",").toTypedArray())
         }
     }
 
@@ -183,17 +184,14 @@ class MqttActivity : BaseActivity(){
         mBinding.clientIdEdit.setText(DEFAULT_CLIENT_ID)
         mBinding.clientIdEdit.setSelection(mBinding.clientIdEdit.length())
 
-        mBinding.subtopicEdit.setText(DEFAULT_SUB_TOPIC)
-        mBinding.subtopicEdit.setSelection(mBinding.subtopicEdit.length())
-
         mBinding.sendTopicEdit.setText(DEFAULT_SEND_TOPIC)
         mBinding.sendTopicEdit.setSelection(mBinding.sendTopicEdit.length())
 
         mBinding.sendEdit.setText(DEFAULT_SEND_CONTENT)
         mBinding.sendEdit.setSelection(mBinding.sendEdit.length())
 
-        mBinding.addTopicEdit.setText(DEFAULT_ADD_TOPIC)
-        mBinding.addTopicEdit.setSelection(mBinding.addTopicEdit.length())
+        mBinding.subTopicEdit.setText(DEFAULT_ADD_TOPIC)
+        mBinding.subTopicEdit.setSelection(mBinding.subTopicEdit.length())
 
         mBinding.removeTopicEdit.setText(DEFAULT_SUB_TOPIC)
         mBinding.removeTopicEdit.setSelection(mBinding.removeTopicEdit.length())
@@ -201,18 +199,16 @@ class MqttActivity : BaseActivity(){
     }
 
     /** 连接，地址[url]，客户端id[clientId]，订阅主题[subTopic] */
-    private fun create(url: String, clientId: String, subTopic: List<String>) {
+    private fun create(url: String, clientId: String) {
         if (mHermes != null){
             releaseHermes()
         }
 
-        mHermes = HermesAgent.create()
-            .setConnectType(HermesAgent.MQTT)
-            .setUrl(url)
-            .setClientId(clientId)
+        mHermes = HermesAgent.createMqttClient()
+            .init(getContext())
             .setPrintLog(true)
+            .setSilent(false)
             .setLogTag("HermesLog")
-            .setSubTopics(subTopic)
             .setOnConnectListener(object : OnConnectListener {
                 override fun onConnectComplete(isReconnected: Boolean) {
                     logResult("连接完成 ： isReconnected ---> $isReconnected")
@@ -225,18 +221,15 @@ class MqttActivity : BaseActivity(){
                 override fun onConnectionLost(cause: Throwable) {
                     logResult("连接断开（丢失） : ${cause.message}")
                 }
+
+                override fun deliveryComplete(token: IMqttDeliveryToken?) {
+                    logResult("消息传递到服务端完成 ${token?.toString()}")
+                }
             })
             .setOnSendListener(object : OnSendListener {
-                override fun onSendComplete(topic: String, content: String) {
+                override fun onSendComplete(topic: String, data: MqttMessage) {
+                    val content = String(data.payload, Charset.forName("UTF-8"))
                     logResult("String发送成功 : topic ---> $topic   $content")
-                }
-
-                override fun onSendComplete(topic: String, data: ByteArray) {
-                    logResult("ByteArray发送成功 : topic ---> $topic   $data")
-                }
-
-                override fun onSendComplete(topic: String, bytes: ByteBuffer) {
-                    logResult("ByteBuffer发送成功 : topic ---> $topic   $bytes")
                 }
 
                 override fun onSendFailure(topic: String, cause: Throwable) {
@@ -244,35 +237,37 @@ class MqttActivity : BaseActivity(){
                 }
             })
             .setOnSubscribeListener(object : OnSubscribeListener {
-                override fun onSubscribeSuccess(topic: Array<String>) {
-                    logResult("订阅成功 : topic ---> $topic")
+                override fun onSubscribeSuccess(topics: Array<String>) {
+                    logResult("订阅成功 : topic ---> ${topics.contentToString()}")
                     logResult("当前订阅列表 : ${mHermes?.getSubscribeTopic()}")
                 }
 
-                override fun onSubscribeFailure(topic: Array<String>, cause: Throwable) {
-                    logResult("订阅失败 : topic ---> $topic   ${cause.message}")
+                override fun onSubscribeFailure(topics: Array<String>, cause: Throwable) {
+                    logResult("订阅失败 : topic ---> ${topics.contentToString()}   ${cause.message}")
                 }
 
-                override fun onMsgArrived(subTopic: String, msg: String) {
-                    logResult("消息到达($subTopic)： $msg")
+                override fun onMsgArrived(subTopic: String, msg: MqttMessage) {
+                    val content = String(msg.payload, Charset.forName("UTF-8"))
+                    logResult("消息到达($subTopic)： $content")
                 }
+
             })
             .setOnUnsubscribeListener(object : OnUnsubscribeListener {
                 override fun onUnsubscribeSuccess(topics: Array<String>) {
-                    logResult("解除订阅成功 : topic ---> $topics")
+                    logResult("解除订阅成功 : topic ---> ${topics.contentToString()}")
                     logResult("剩余订阅列表 : ${mHermes?.getSubscribeTopic()}")
                 }
 
                 override fun onUnsubscribeFailure(topics: Array<String>, cause: Throwable) {
-                    logResult("解除订阅失败 : topic ---> $topics   ${cause.message}")
+                    logResult("解除订阅失败 : topic ---> ${topics.contentToString()}   ${cause.message}")
                 }
             })
-            .buildConnect(applicationContext)
+            .build(url, clientId)
     }
 
     /** 打印信息[result] */
     private fun logResult(result: String) {
-        val log = DateUtils.getCurrentFormatString(DateUtils.TYPE_8).append(" : ").append(result)
+        val log = "【${DateUtils.getCurrentFormatString(DateUtils.TYPE_8)}】 ".append(result)
         val text = mBinding.resultTv.text
         if (text.isEmpty()) {
             mBinding.resultTv.text = log

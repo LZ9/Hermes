@@ -1,4 +1,4 @@
-package com.lodz.android.hermes.mqtt.base.utils
+package com.lodz.android.hermes.utils
 
 import android.annotation.SuppressLint
 import android.app.Service
@@ -10,11 +10,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 /**
- * mqtt工具类
+ * Hermes工具类
  * @author zhouL
  * @date 2023/10/12
  */
-object MqttUtils {
+object HermesUtils {
 
     /** 手机网络是否在线 */
     fun isOnline(context: Context): Boolean {

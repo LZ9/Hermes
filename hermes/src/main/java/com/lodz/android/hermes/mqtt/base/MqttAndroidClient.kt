@@ -358,7 +358,9 @@ class MqttAndroidClient(private val context: Context) {
     private fun msgArrivedCallback(event: MqttEvent) {
         val data = event.data
         if (data != null) {
-            acknowledgeMessage(event.clientKey, data.messageId)
+            if (event.ack == Ack.AUTO_ACK){//自动确认到达时删除数据库内的缓存
+                acknowledgeMessage(event.clientKey, data.messageId)
+            }
             mCallback?.messageArrived(data.clientKey, data.topic, data.messageId, data.message)
         }
     }

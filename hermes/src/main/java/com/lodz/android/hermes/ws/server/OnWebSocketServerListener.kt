@@ -12,19 +12,19 @@ import java.nio.ByteBuffer
 interface OnWebSocketServerListener {
 
     /** 打开 */
-    fun onOpen(ws: WebSocket?, handshake: ClientHandshake?)
+    fun onOpen(ws: WebSocket?, ip: String, handshake: ClientHandshake?)
 
     /** 关闭 */
-    fun onClose(ws: WebSocket?, code: Int, reason: String, isRemote: Boolean)
+    fun onClose(ws: WebSocket?, ip: String, code: Int, reason: String, isRemote: Boolean)
 
     /** 消息接收 */
-    fun onMessage(ws: WebSocket?, message: String)
+    fun onMessage(ws: WebSocket?, ip: String, msg: String)
 
     /** 消息接收 */
-    fun onMessage(ws: WebSocket?, byteBuffer: ByteBuffer?)
+    fun onMessage(ws: WebSocket?, ip: String, msg: ByteBuffer?)
 
     /** 异常 */
-    fun onError(ws: WebSocket?, e: Exception)
+    fun onError(ws: WebSocket?, ip: String, e: Exception)
 
     /** 开始 */
     fun onStart()

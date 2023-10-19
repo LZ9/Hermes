@@ -13,9 +13,10 @@ import com.lodz.android.hermes.mqtt.base.contract.SubscribeMqttEventActionListen
 import com.lodz.android.hermes.mqtt.base.contract.UnsubscribeMqttEventActionListener
 import com.lodz.android.hermes.mqtt.base.db.DbStoredData
 import com.lodz.android.hermes.mqtt.base.db.MessageStore
+import com.lodz.android.hermes.mqtt.base.db.MessageStoreImpl
 import com.lodz.android.hermes.mqtt.base.sender.AlarmPingSender
-import com.lodz.android.hermes.mqtt.base.utils.IoScope
-import com.lodz.android.hermes.mqtt.base.utils.MqttUtils
+import com.lodz.android.hermes.utils.IoScope
+import com.lodz.android.hermes.utils.HermesUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions
@@ -39,8 +40,7 @@ import kotlin.concurrent.Volatile
 class MqttConnection(
     private val mContext: Context, // 上下文
     private val mBean: ClientInfoBean, // 客户端信息
-    private val mPersistence: MqttClientPersistence, // 持久层接口
-    private val mMessageStore: MessageStore // 数据库操作接口
+    mPersistence: MqttClientPersistence, // 持久层接口
 ) : MqttCallbackExtended {
 
     companion object {
@@ -49,9 +49,11 @@ class MqttConnection(
 
     /** 客户端 */
     private var mClient: MqttAsyncClient? = null
+    /** 数据库操作方法 */
+    private val mMessageStore: MessageStore = MessageStoreImpl(mContext)
 
     /** 唤醒锁 */
-    private val mWakeLock: PowerManager.WakeLock = MqttUtils.getWakeLock(mContext,
+    private val mWakeLock: PowerManager.WakeLock = HermesUtils.getWakeLock(mContext,
         "${javaClass.name} ${mBean.getClientId()} on host ${mBean.getServerURI()}")
 
     /** ping数据包发送器 */
@@ -114,16 +116,16 @@ class MqttConnection(
             isConnecting = false
             connectFail("connect fail", e)
         }
-        MqttUtils.releaseWakeLock(mWakeLock)
+        HermesUtils.releaseWakeLock(mWakeLock)
     }
 
     /** 连接成功 */
     private fun connectSuccess(){
-        MqttUtils.acquireWakeLock(mWakeLock)
+        HermesUtils.acquireWakeLock(mWakeLock)
         EventBus.getDefault().post(MqttEvent.createConnectSuccess(mBean.getClientKey()))
         deliverBacklog()
         isConnecting = false
-        MqttUtils.releaseWakeLock(mWakeLock)
+        HermesUtils.releaseWakeLock(mWakeLock)
     }
 
     /** 将数据库缓存的到达消息全部返回给用户 */
@@ -131,17 +133,17 @@ class MqttConnection(
         IoScope().launch {
             val backlog = mMessageStore.getAllMessages(mBean.getClientKey())
             for (data in backlog) {
-                launch(Dispatchers.Main) { EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), data)) }
+                launch(Dispatchers.Main) { EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), data, mBean.getAckType())) }
             }
         }
     }
 
     /** 连接失败 */
     private fun connectFail(errorMsg: String, e: Throwable?) {
-        MqttUtils.acquireWakeLock(mWakeLock)
+        HermesUtils.acquireWakeLock(mWakeLock)
         isConnecting = false
         EventBus.getDefault().post(MqttEvent.createConnectFail(mBean.getClientKey(), errorMsg, e ?: RuntimeException()))
-        MqttUtils.releaseWakeLock(mWakeLock)
+        HermesUtils.releaseWakeLock(mWakeLock)
     }
 
     /** 关闭客户端 */
@@ -182,7 +184,7 @@ class MqttConnection(
         if (mBean.getConnectOptions().isCleanSession){
             IoScope().launch { mMessageStore.clearAllMessages(mBean.getClientKey()) }
         }
-        MqttUtils.releaseWakeLock(mWakeLock)
+        HermesUtils.releaseWakeLock(mWakeLock)
     }
 
     /** 是否已连接 */
@@ -316,7 +318,7 @@ class MqttConnection(
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        MqttUtils.releaseWakeLock(mWakeLock)
+        HermesUtils.releaseWakeLock(mWakeLock)
     }
 
     /** 服务端消息到达 */
@@ -325,7 +327,7 @@ class MqttConnection(
         IoScope().launch {
             val messageId = mMessageStore.saveMessage(mBean.getClientKey(), topic, message)
             launch(Dispatchers.Main) {
-                EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), DbStoredData(messageId, mBean.getClientKey(), topic, message)))
+                EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), DbStoredData(messageId, mBean.getClientKey(), topic, message), mBean.getAckType()))
             }
         }
     }
@@ -358,7 +360,7 @@ class MqttConnection(
             HermesLog.d(TAG, "the client is connecting")
             return
         }
-        if (!MqttUtils.isOnline(mContext)) {
+        if (!HermesUtils.isOnline(mContext)) {
             HermesLog.d(TAG, "the network is offline, cannot reconnect")
             return
         }
@@ -394,5 +396,10 @@ class MqttConnection(
     /** 根据索引[bufferIndex]删除消息 */
     fun deleteBufferedMessage(bufferIndex: Int) {
         mClient?.deleteBufferedMessage(bufferIndex)
+    }
+
+    /** 确认消息到达并删除数据库消息编号[messageId]的缓存 */
+    fun acknowledgeMessageArrival(messageId: String) {
+        IoScope().launch { mMessageStore.deleteArrivedMessage(mBean.getClientKey(), messageId) }
     }
 }

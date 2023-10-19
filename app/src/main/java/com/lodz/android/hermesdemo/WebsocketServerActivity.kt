@@ -6,18 +6,20 @@ import android.os.Bundle
 import android.view.View
 import com.lodz.android.corekt.anko.IoScope
 import com.lodz.android.corekt.anko.append
+import com.lodz.android.corekt.anko.check
 import com.lodz.android.corekt.anko.getColorCompat
 import com.lodz.android.corekt.anko.getIpv4List
+import com.lodz.android.corekt.anko.hideInputMethod
 import com.lodz.android.corekt.anko.toastShort
+import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.corekt.utils.StatusBarUtil
+import com.lodz.android.hermes.contract.HermesWebSocketServer
+import com.lodz.android.hermes.modules.HermesAgent
 import com.lodz.android.hermes.ws.server.OnWebSocketServerListener
-import com.lodz.android.hermes.ws.server.BaseWebSocketServer
 import com.lodz.android.hermesdemo.databinding.ActivityWsServerBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
 import java.nio.ByteBuffer
@@ -37,11 +39,13 @@ class WebsocketServerActivity : BaseActivity() {
         }
     }
 
+    // TODO: 2023/10/18 添加向指定客户端发送消息的交互
     private val mBinding: ActivityWsServerBinding by bindingLayout(ActivityWsServerBinding::inflate)
 
     override fun getViewBindingLayout(): View = mBinding.root
 
-    private var mWebSocketServer: BaseWebSocketServer? = null
+    /** WebSocket服务端 */
+    private var mHermes: HermesWebSocketServer? = null
 
     override fun findViews(savedInstanceState: Bundle?) {
         super.findViews(savedInstanceState)
@@ -105,8 +109,8 @@ class WebsocketServerActivity : BaseActivity() {
         }
 
         mBinding.sendBtn.setOnClickListener {
-            if (mWebSocketServer == null){
-                toastShort(R.string.ws_server_unopen)
+            if (!mHermes?.isConnected().check()){
+                toastShort(R.string.ws_server_no_open)
                 return@setOnClickListener
             }
             val msg = mBinding.contentEdit.text.toString()
@@ -114,90 +118,74 @@ class WebsocketServerActivity : BaseActivity() {
                 toastShort(R.string.ws_server_send_hint)
                 return@setOnClickListener
             }
-            sendMsg(msg)
+            logResult("向所有连接用户发送信息：$msg")
+            mHermes?.sendMsgToAll(msg)
+            mBinding.contentEdit.hideInputMethod()
         }
 
         mBinding.cleanBtn.setOnClickListener {
             mBinding.logTv.text = ""
         }
+
+        mBinding.silentBtn.setOnClickListener {
+            mHermes?.setSilent(true)
+        }
+
+        mBinding.unsilentBtn.setOnClickListener {
+            mHermes?.setSilent(false)
+        }
     }
 
+    /** 启动WebSocket服务端 */
     private fun openWebSocketServer(ip: String, port: Int) {
-        if (mWebSocketServer != null) {
-            addLog("服务已启动")
-            return
+        if (mHermes != null) {
+            closeWebSocketServer()
         }
-        addLog("开启WebSocket服务端")
-        mWebSocketServer = BaseWebSocketServer(ip, port)
-        mWebSocketServer?.setOnWebSocketServerListener(object : OnWebSocketServerListener {
-            override fun onOpen(ws: WebSocket?, handshake: ClientHandshake?) {
-                IoScope().launch {
-                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
-                    launch(Dispatchers.Main) {
-                        addLog("$name 用户已连接上")
-                    }
+        logResult("开启WebSocket服务端")
+        mHermes = HermesAgent.createWebSocketServer()
+            .init(getContext())
+            .setLogTag("WebSocketLog")
+            .setPrintLog(true)
+            .setSilent(false)
+            .setConnectionLostTimeout(5)
+            .setOnWebSocketServerListener(object :OnWebSocketServerListener{
+                override fun onOpen(ws: WebSocket?, ip: String, handshake: ClientHandshake?) {
+                    logResult("${ip.ifEmpty { "未知" }} 用户已连接上（在线数${mHermes?.onlineCount()}）")
                 }
-            }
 
-            override fun onClose(ws: WebSocket?, code: Int, reason: String, isRemote: Boolean) {
-                IoScope().launch {
-                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
-                    launch(Dispatchers.Main) {
-                        val log = name.append(" 用户已断开")
-                            .append(" ; code : $code")
-                            .append(" ; reason : $reason")
-                            .append(" ; isRemote : $isRemote")
-                        addLog(log)
-                    }
+                override fun onClose(ws: WebSocket?, ip: String, code: Int, reason: String, isRemote: Boolean) {
+                    val log = ip.ifEmpty { "未知" }.append("用户已断开")
+                        .append(" ; code : $code")
+                        .append(" ; reason : $reason")
+                        .append(" ; isRemote : $isRemote")
+                        .append("（在线数${mHermes?.onlineCount()}）")
+                    logResult(log)
                 }
-            }
 
-            override fun onMessage(ws: WebSocket?, message: String) {
-                IoScope().launch {
-                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
-                    launch(Dispatchers.Main) {
-                        addLog("$name 用户发来String消息：$message")
-                    }
+                override fun onMessage(ws: WebSocket?, ip: String, msg: String) {
+                    logResult("${ip.ifEmpty { "未知" }}用户发来String消息：$msg")
                 }
-            }
 
-            override fun onMessage(ws: WebSocket?, byteBuffer: ByteBuffer?) {
-                IoScope().launch {
-                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
-                    launch(Dispatchers.Main) {
-                        addLog("$name 用户发来ByteBuffer消息：$byteBuffer")
-                    }
+                override fun onMessage(ws: WebSocket?, ip: String, msg: ByteBuffer?) {
+                    logResult("${ip.ifEmpty { "未知" }}用户发来ByteBuffer消息：$msg")
                 }
-            }
 
-            override fun onError(ws: WebSocket?, e: Exception) {
-                IoScope().launch {
-                    val name = ws?.remoteSocketAddress?.hostName ?: "未知"
-                    launch(Dispatchers.Main) {
-                        addLog("$name 用户连接出现异常 ; message : ${e.message}")
-                    }
+                override fun onError(ws: WebSocket?, ip: String, e: Exception) {
+                    logResult("${ip.ifEmpty { "未知" }}用户连接出现异常 ; e : ${e.cause}")
                 }
-            }
 
-            override fun onStart() {
-                addLog("WebSocket服务端已启动")
-            }
-        })
-        mWebSocketServer?.isReuseAddr = true
-        mWebSocketServer?.start()
-        addLog("服务端路径：${mWebSocketServer?.address?.toString()}")
+                override fun onStart() {
+                    logResult("WebSocket服务端已启动")
+                }
+            })
+            .build(ip, port)
+        mHermes?.connect()
+        logResult("服务端路径：${mHermes?.getInetSocketAddress()?.toString()}")
     }
 
     private fun closeWebSocketServer() {
-        addLog("关闭WebSocket服务端")
-        mWebSocketServer?.setOnWebSocketServerListener(null)
-        mWebSocketServer?.stop()
-        mWebSocketServer = null
-    }
-
-    private fun sendMsg(msg: String) {
-        addLog("向所有连接用户发送：$msg")
-        mWebSocketServer?.sendMsgToAll(msg)
+        logResult("关闭WebSocket服务端")
+        releaseHermes()
     }
 
     override fun initData() {
@@ -205,8 +193,16 @@ class WebsocketServerActivity : BaseActivity() {
         showStatusCompleted()
     }
 
-    private fun addLog(log: String) {
-        val text = mBinding.logTv.text.toString()
+    private fun releaseHermes(){
+        mHermes?.release()
+        mHermes?.setOnWebSocketServerListener(null)
+        mHermes = null
+    }
+
+    /** 打印信息[result] */
+    private fun logResult(result: String) {
+        val log = "【${DateUtils.getCurrentFormatString(DateUtils.TYPE_8)}】 ".append(result)
+        val text = mBinding.logTv.text
         if (text.isEmpty()) {
             mBinding.logTv.text = log
         }

@@ -4,21 +4,29 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import org.java_websocket.client.WebSocketClient
+import org.java_websocket.drafts.Draft
+import org.java_websocket.drafts.Draft_6455
 import org.java_websocket.handshake.ServerHandshake
 import java.net.SocketException
 import java.net.URI
+import java.nio.ByteBuffer
 
 /**
  * WebSocket客户端
  * @author zhouL
  * @date 2019/12/21
  */
-class WsClient(url: String) : WebSocketClient(URI.create(url)) {
+open class WsClient(
+    url: String,
+    protocolDraft: Draft = Draft_6455(),
+    httpHeaders: Map<String, String>? = null,
+    connectTimeout: Int = 0
+) : WebSocketClient(URI.create(url), protocolDraft, httpHeaders, connectTimeout) {
 
     private var mListener: OnWebSocketListener? = null
 
-    override fun onOpen(handshakedata: ServerHandshake?) {
-        doOpen(handshakedata)
+    override fun onOpen(handshakeData: ServerHandshake) {
+        doOpen(handshakeData)
     }
 
     override fun onClose(code: Int, reason: String?, remote: Boolean) {
@@ -27,6 +35,10 @@ class WsClient(url: String) : WebSocketClient(URI.create(url)) {
 
     override fun onMessage(message: String?) {
         doMessage(message ?: "")
+    }
+
+    override fun onMessage(bytes: ByteBuffer?) {
+        bytes?.let { doMessage(it) }
     }
 
     override fun onError(ex: Exception?) {
@@ -48,11 +60,15 @@ class WsClient(url: String) : WebSocketClient(URI.create(url)) {
         super.reconnect()
     }
 
-    private fun doOpen(handshakedata: ServerHandshake?) {
-        MainScope().launch { mListener?.onOpen(handshakedata) }
+    private fun doOpen(handshakeData: ServerHandshake) {
+        MainScope().launch { mListener?.onOpen(handshakeData) }
     }
 
     private fun doMessage(message: String) {
+        MainScope().launch(Dispatchers.Main) { mListener?.onMessage(message) }
+    }
+
+    private fun doMessage(message: ByteBuffer) {
         MainScope().launch(Dispatchers.Main) { mListener?.onMessage(message) }
     }
 

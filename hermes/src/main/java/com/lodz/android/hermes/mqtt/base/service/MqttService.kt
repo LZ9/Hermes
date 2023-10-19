@@ -9,12 +9,8 @@ import android.os.IBinder
 import com.lodz.android.hermes.modules.HermesLog
 import com.lodz.android.hermes.mqtt.base.bean.eun.Ack
 import com.lodz.android.hermes.mqtt.base.bean.source.MqttClient
-import com.lodz.android.hermes.mqtt.base.db.MessageStore
-import com.lodz.android.hermes.mqtt.base.db.MessageStoreImpl
 import com.lodz.android.hermes.mqtt.base.sender.NetworkConnectionReceiver
-import com.lodz.android.hermes.mqtt.base.utils.IoScope
-import com.lodz.android.hermes.mqtt.base.utils.MqttUtils
-import kotlinx.coroutines.launch
+import com.lodz.android.hermes.utils.HermesUtils
 import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener
@@ -29,13 +25,10 @@ import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
  * @date 2023/10/13
  */
 class MqttService : Service() {
-    companion object{
+    companion object {
         const val TAG = "MqttService"
-        private const val FILE_PERSISTENCE_DIR_NAME = "MqttConnection"
+        const val FILE_PERSISTENCE_DIR_NAME = "MqttConnection"
     }
-
-    /** 数据库操作接口 */
-    private var mMessageStore: MessageStore? = null
 
     private var mBinder: MqttServiceBinder? = null
 
@@ -48,7 +41,6 @@ class MqttService : Service() {
     override fun onCreate() {
         super.onCreate()
         mBinder = MqttServiceBinder(this)
-        mMessageStore = MessageStoreImpl(this)
     }
 
     override fun onDestroy() {
@@ -105,7 +97,7 @@ class MqttService : Service() {
         ackType: Ack = Ack.AUTO_ACK,
         persistence: MqttClientPersistence? = null
     ): String {
-        val clientKey = MqttUtils.getClientKey(this, clientId, serverURI)
+        val clientKey = HermesUtils.getClientKey(this, clientId, serverURI)
         val client = getClient(clientKey)
         if (client == null){
             addClient(serverURI,clientId, options,ackType, persistence)
@@ -132,7 +124,6 @@ class MqttService : Service() {
         if (clientId.isEmpty()){
             throw IllegalArgumentException("clientId is empty")
         }
-        val store = mMessageStore ?: throw IllegalArgumentException("MessageStore is empty")
         val p = if (persistence != null) {
             persistence
         } else {
@@ -141,7 +132,7 @@ class MqttService : Service() {
                 ?: throw IllegalArgumentException("cannot get file dir")
             MqttDefaultFilePersistence(myDir.absolutePath)
         }
-        return MqttClient(this, MqttUtils.getClientKey(this, clientId, serverURI), serverURI, clientId, options, p, ackType, store)
+        return MqttClient(this, HermesUtils.getClientKey(this, clientId, serverURI), serverURI, clientId, options, p, ackType)
     }
 
     /** 添加客户端，服务端地址[serverURI]，客户端编号[clientId]，连接配置[options]，消息确认模式类型[ackType]，持久层接口[persistence] */
@@ -255,9 +246,7 @@ class MqttService : Service() {
     /** 根据客户端主键[clientKey]确认消息到达并删除数据库消息编号[messageId]的缓存 */
     fun acknowledgeMessageArrival(clientKey: String, messageId: String) {
         val client = getClient(clientKey)
-        if (client != null && client.getAckType() == Ack.AUTO_ACK) {
-            IoScope().launch { mMessageStore?.deleteArrivedMessage(clientKey, messageId) }
-        }
+        client?.getConnection()?.acknowledgeMessageArrival(messageId)
     }
 
     /** 重连客户端 */

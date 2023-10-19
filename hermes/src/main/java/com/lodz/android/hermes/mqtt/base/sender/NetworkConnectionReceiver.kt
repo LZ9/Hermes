@@ -6,7 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
 import com.lodz.android.hermes.modules.HermesLog
-import com.lodz.android.hermes.mqtt.base.utils.MqttUtils
+import com.lodz.android.hermes.utils.HermesUtils
 
 /**
  * 网络变化广播接收器
@@ -26,7 +26,7 @@ class NetworkConnectionReceiver : BroadcastReceiver() {
         val pm = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
         val wl = pm?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, lockTag)
         wl?.acquire()
-        val isOnline = MqttUtils.isOnline(context)
+        val isOnline = HermesUtils.isOnline(context)
         HermesLog.d(TAG, "network changed isOnline = $isOnline")
         mListener?.onNetworkChanged(isOnline)
         wl?.release()

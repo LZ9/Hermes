@@ -7,9 +7,8 @@
     <string name="mqtt_connect_info_title">连接信息</string>
     <string name="mqtt_url_hint">请输入ip和端口号</string>
     <string name="mqtt_client_id_hint">请输入客户端id</string>
-    <string name="mqtt_subtopic_hint">请输入订阅主题名称（多个用英文,隔开）</string>
-    <string name="mqtt_add_topic_hint">请输入动态新增的主题名称（多个用英文,隔开）</string>
-    <string name="mqtt_remove_topic_hint">请输入动态移除的主题名称（多个用英文,隔开）</string>
+    <string name="mqtt_sub_topic_hint">请输入订阅主题名称（多个用英文,隔开）</string>
+    <string name="mqtt_remove_topic_hint">请输入移除的主题名称（多个用英文,隔开）</string>
     <string name="mqtt_send_info_title">发送数据到服务端</string>
     <string name="mqtt_send">发送</string>
     <string name="mqtt_send_topic_hint">请输入发送主题</string>
@@ -20,7 +19,7 @@
     <string name="mqtt_silent">静默（不提醒消息）</string>
     <string name="mqtt_unsilent">非静默（正常提醒）</string>
     <string name="mqtt_dynamic_sub_title">动态订阅</string>
-    <string name="mqtt_add_topic">新增订阅</string>
+    <string name="mqtt_sub_topic">订阅</string>
     <string name="mqtt_remove_topic">删除订阅</string>
     <string name="mqtt_url_empty">ip和端口号不能为空</string>
     <string name="mqtt_client_id_empty">客户端id不能为空</string>
@@ -44,6 +43,6 @@
     <string name="ws_server_clean">清空日志</string>
     <string name="ws_server_send_hint">请输入发送内容</string>
     <string name="ws_server_send">发送</string>
-    <string name="ws_server_unopen">服务未启动</string>
+    <string name="ws_server_no_open">服务未启动</string>
 
 </resources>

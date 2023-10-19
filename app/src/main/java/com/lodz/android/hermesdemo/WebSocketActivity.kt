@@ -7,11 +7,11 @@ import android.view.View
 import com.lodz.android.corekt.anko.*
 import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.corekt.utils.StatusBarUtil
-import com.lodz.android.hermes.contract.Hermes
-import com.lodz.android.hermes.mqtt.OnConnectListener
-import com.lodz.android.hermes.mqtt.OnSendListener
-import com.lodz.android.hermes.mqtt.OnSubscribeListener
+import com.lodz.android.hermes.contract.HermesWebSocketClient
 import com.lodz.android.hermes.modules.HermesAgent
+import com.lodz.android.hermes.ws.client.OnConnectListener
+import com.lodz.android.hermes.ws.client.OnSendListener
+import com.lodz.android.hermes.ws.client.OnSubscribeListener
 import com.lodz.android.hermesdemo.databinding.ActivityWsBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout
@@ -27,7 +27,7 @@ class WebSocketActivity : BaseActivity() {
 
     companion object {
 
-        private const val DEFAULT_URL = "ws://121.40.165.18:8800"
+        private const val DEFAULT_URL = "ws://124.222.224.186:8800"
 
         fun start(context: Context){
             context.startActivity(Intent(context, WebSocketActivity::class.java))
@@ -38,8 +38,8 @@ class WebSocketActivity : BaseActivity() {
 
     override fun getViewBindingLayout(): View = mBinding.root
 
-    /** 推送客户端 */
-    private var mHermes: Hermes? = null
+    /** WebSocket客户端 */
+    private var mHermes: HermesWebSocketClient? = null
 
     override fun findViews(savedInstanceState: Bundle?) {
         super.findViews(savedInstanceState)
@@ -54,7 +54,6 @@ class WebSocketActivity : BaseActivity() {
     }
 
     override fun onClickBackBtn() {
-        super.onClickBackBtn()
         releaseHermes()
         finish()
     }
@@ -65,9 +64,7 @@ class WebSocketActivity : BaseActivity() {
     }
 
     private fun releaseHermes(){
-        if (mHermes?.isConnected() == true){
-            mHermes?.disconnect()
-        }
+        mHermes?.release()
         mHermes = null
     }
 
@@ -76,67 +73,63 @@ class WebSocketActivity : BaseActivity() {
         // 连接按钮
         mBinding.createBtn.setOnClickListener {
             val url = mBinding.urlEdit.text.toString()
-            if (url.isEmpty()){
+            if (url.isEmpty()) {
                 toastShort(R.string.mqtt_url_hint)
                 return@setOnClickListener
             }
-            if (mHermes != null){
+            if (mHermes != null) {
                 releaseHermes()
             }
-            mHermes = HermesAgent.create()
-                    .setConnectType(HermesAgent.WEB_SOCKET)
-                    .setUrl(url)
-                    .setPrintLog(true)
-                    .setOnConnectListener(object :OnConnectListener{
-                        override fun onConnectComplete(isReconnected: Boolean) {
-                            logResult("连接完成 ： isReconnected ---> $isReconnected")
-                        }
+            mHermes = HermesAgent.createWebSocketClient()
+                .init(getContext())
+                .setLogTag("WebSocketLog")
+                .setPrintLog(true)
+                .setSilent(false)
+                .setReconnectInterval(20 * 1000)
+                .setOnConnectListener(object : OnConnectListener {
+                    override fun onConnectComplete() {
+                        logResult("连接完成")
+                    }
 
-                        override fun onConnectFailure(cause: Throwable) {
-                            logResult("连接失败 : ${cause.message}")
-                        }
+                    override fun onConnectFailure(cause: Throwable) {
+                        logResult("连接失败 : ${cause.message}")
+                    }
 
-                        override fun onConnectionLost(cause: Throwable) {
-                            logResult("连接断开（丢失） : ${cause.message}")
-                        }
-                    })
-                    .setOnSendListener(object :OnSendListener{
-                        override fun onSendComplete(topic: String, content: String) {
-                            logResult("String发送成功 : topic ---> $topic   $content")
-                        }
+                    override fun onConnectionLost(cause: Throwable) {
+                        logResult("连接断开（丢失） : ${cause.message}")
+                    }
+                })
+                .setOnSubscribeListener(object : OnSubscribeListener {
+                    override fun onMsgArrived(ip: String, msg: String) {
+                        logResult("消息到达 : $ip ---> $msg")
+                    }
 
-                        override fun onSendComplete(topic: String, data: ByteArray) {
-                            logResult("ByteArray发送成功 : topic ---> $topic   $data")
-                        }
+                    override fun onMsgArrived(ip: String, msg: ByteBuffer) {
+                        logResult("消息到达 : $ip ---> $msg")
+                    }
+                })
+                .setOnSendListener(object : OnSendListener {
+                    override fun onSendComplete(ip: String, msg: String) {
+                        logResult("消息发送成功 : $ip -> $msg")
+                    }
 
-                        override fun onSendComplete(topic: String, bytes: ByteBuffer) {
-                            logResult("ByteBuffer发送成功 : topic ---> $topic   $bytes")
-                        }
+                    override fun onSendComplete(ip: String, msg: ByteBuffer) {
+                        logResult("消息发送成功 : $ip -> $msg")
+                    }
 
-                        override fun onSendFailure(topic: String, cause: Throwable) {
-                            logResult("发送失败 : topic ---> $topic   ${cause.message}")
-                        }
-                    })
-                    .setOnSubscribeListener(object :OnSubscribeListener{
-                        override fun onSubscribeSuccess(topic: Array<String>) {
-                            logResult("订阅成功 : topic ---> $topic")
-                        }
-
-                        override fun onSubscribeFailure(topic: Array<String>, cause: Throwable) {
-                            logResult("订阅失败 : topic ---> $topic   ${cause.message}")
-                        }
-
-                        override fun onMsgArrived(subTopic: String, msg: String) {
-                            logResult("消息到达($subTopic)： $msg")
-                        }
-                    })
-                    .buildConnect(applicationContext)
+                    override fun onSendFailure(cause: Throwable) {
+                        logResult("消息发送失败：${cause.message}")
+                    }
+                })
+                .build(url, true)
+            mHermes?.connect()
+            logResult("开始连接：$url")
         }
 
         // 发送按钮
         mBinding.sendBtn.setOnClickListener {
             val content = mBinding.sendEdit.text.toString()
-            if (content.isEmpty()){
+            if (content.isEmpty()) {
                 toastShort(R.string.mqtt_send_content_empty)
                 return@setOnClickListener
             }
@@ -144,16 +137,28 @@ class WebSocketActivity : BaseActivity() {
                 toastShort(R.string.mqtt_client_unconnected)
                 return@setOnClickListener
             }
-            mHermes?.sendTopic("", mBinding.sendEdit.text.toString())
+            mHermes?.sendData(mBinding.sendEdit.text.toString())
+            mBinding.sendEdit.hideInputMethod()
         }
 
-        // 清空按钮
+        // 清空日志按钮
         mBinding.cleanBtn.setOnClickListener {
             mBinding.resultTv.text = ""
         }
 
-        // 断开按钮
+        // 连接按钮
         mBinding.connectBtn.setOnClickListener {
+            val url = mBinding.urlEdit.text.toString()
+            if (url.isEmpty()) {
+                toastShort(R.string.mqtt_url_hint)
+                return@setOnClickListener
+            }
+            if (mHermes?.isConnected().check()){
+                logResult("已经连接")
+                return@setOnClickListener
+            }
+            logResult("开始连接 : $url")
+            mHermes?.build(url, true)
             mHermes?.connect()
         }
 
@@ -164,10 +169,12 @@ class WebSocketActivity : BaseActivity() {
 
         mBinding.silentBtn.setOnClickListener {
             mHermes?.setSilent(true)
+            logResult("静默，关闭消息到达提醒")
         }
 
         mBinding.unsilentBtn.setOnClickListener {
             mHermes?.setSilent(false)
+            logResult("非静默，打开消息到达提醒")
         }
     }
 
@@ -179,7 +186,7 @@ class WebSocketActivity : BaseActivity() {
 
     /** 打印信息[result] */
     private fun logResult(result: String) {
-        val log = DateUtils.getCurrentFormatString(DateUtils.TYPE_8).append(" : ").append(result)
+        val log = "【${DateUtils.getCurrentFormatString(DateUtils.TYPE_8)}】 ".append(result)
         val text = mBinding.resultTv.text
         if (text.isEmpty()) {
             mBinding.resultTv.text = log

@@ -2,6 +2,7 @@ package com.lodz.android.hermes.contract
 
 import android.content.Context
 import com.lodz.android.hermes.mqtt.base.bean.eun.Ack
+import com.lodz.android.hermes.mqtt.client.OnBuildListener
 import com.lodz.android.hermes.mqtt.client.OnConnectListener
 import com.lodz.android.hermes.mqtt.client.OnSendListener
 import com.lodz.android.hermes.mqtt.client.OnSubscribeListener
@@ -33,6 +34,9 @@ interface HermesMqttClient : Hermes {
         ackType: Ack = Ack.AUTO_ACK,
         persistence: MqttClientPersistence? = null
     ): HermesMqttClient
+
+    /** 构建监听器，监听器[listener] */
+    fun setOnBuildListener(listener: OnBuildListener?): HermesMqttClient
 
     /** 设置订阅监听器，监听器[listener] */
     fun setOnSubscribeListener(listener: OnSubscribeListener?): HermesMqttClient

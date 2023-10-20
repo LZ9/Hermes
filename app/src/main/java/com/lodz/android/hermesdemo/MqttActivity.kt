@@ -11,6 +11,7 @@ import com.lodz.android.corekt.anko.toastShort
 import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.hermes.contract.HermesMqttClient
 import com.lodz.android.hermes.modules.HermesAgent
+import com.lodz.android.hermes.mqtt.client.OnBuildListener
 import com.lodz.android.hermes.mqtt.client.OnConnectListener
 import com.lodz.android.hermes.mqtt.client.OnSendListener
 import com.lodz.android.hermes.mqtt.client.OnSubscribeListener
@@ -209,6 +210,15 @@ class MqttActivity : BaseActivity(){
             .setPrintLog(true)
             .setSilent(false)
             .setLogTag("HermesLog")
+            .setOnBuildListener(object :OnBuildListener{
+                override fun onSuccess(clientKey: String) {
+                    logResult("构建完成 ： $clientKey")
+                }
+
+                override fun onFailure(clientKey: String, cause: Throwable) {
+                    logResult("构建失败 : $clientKey  cause : ${cause.message}")
+                }
+            })
             .setOnConnectListener(object : OnConnectListener {
                 override fun onConnectComplete(isReconnected: Boolean) {
                     logResult("连接完成 ： isReconnected ---> $isReconnected")
@@ -227,22 +237,22 @@ class MqttActivity : BaseActivity(){
                 }
             })
             .setOnSendListener(object : OnSendListener {
-                override fun onSendComplete(topic: String, data: MqttMessage) {
+                override fun onComplete(topic: String, data: MqttMessage) {
                     val content = String(data.payload, Charset.forName("UTF-8"))
                     logResult("String发送成功 : topic ---> $topic   $content")
                 }
 
-                override fun onSendFailure(topic: String, cause: Throwable) {
+                override fun onFailure(topic: String, cause: Throwable) {
                     logResult("发送失败 : topic ---> $topic   ${cause.message}")
                 }
             })
             .setOnSubscribeListener(object : OnSubscribeListener {
-                override fun onSubscribeSuccess(topics: Array<String>) {
+                override fun onSuccess(topics: Array<String>) {
                     logResult("订阅成功 : topic ---> ${topics.contentToString()}")
-                    logResult("当前订阅列表 : ${mHermes?.getSubscribeTopic()}")
+                    logResult("当前订阅列表 : ${mHermes?.getSubscribeTopic().contentToString()}")
                 }
 
-                override fun onSubscribeFailure(topics: Array<String>, cause: Throwable) {
+                override fun onFailure(topics: Array<String>, cause: Throwable) {
                     logResult("订阅失败 : topic ---> ${topics.contentToString()}   ${cause.message}")
                 }
 
@@ -253,16 +263,17 @@ class MqttActivity : BaseActivity(){
 
             })
             .setOnUnsubscribeListener(object : OnUnsubscribeListener {
-                override fun onUnsubscribeSuccess(topics: Array<String>) {
+                override fun onSuccess(topics: Array<String>) {
                     logResult("解除订阅成功 : topic ---> ${topics.contentToString()}")
-                    logResult("剩余订阅列表 : ${mHermes?.getSubscribeTopic()}")
+                    logResult("剩余订阅列表 : ${mHermes?.getSubscribeTopic().contentToString()}")
                 }
 
-                override fun onUnsubscribeFailure(topics: Array<String>, cause: Throwable) {
+                override fun onFailure(topics: Array<String>, cause: Throwable) {
                     logResult("解除订阅失败 : topic ---> ${topics.contentToString()}   ${cause.message}")
                 }
             })
             .build(url, clientId)
+        mHermes?.connect()
     }
 
     /** 打印信息[result] */

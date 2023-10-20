@@ -10,10 +10,10 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
 interface OnSubscribeListener {
 
     /** 主题订阅成功，主题名称[topics] */
-    fun onSubscribeSuccess(topics: Array<String>)
+    fun onSuccess(topics: Array<String>)
 
     /** 主题订阅失败，主题名称[topics]，异常[cause] */
-    fun onSubscribeFailure(topics: Array<String>, cause: Throwable)
+    fun onFailure(topics: Array<String>, cause: Throwable)
 
     /** 后台消息到达，订阅主题[subTopic]，消息[msg] */
     fun onMsgArrived(subTopic: String, msg: MqttMessage)

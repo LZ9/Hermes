@@ -10,8 +10,8 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
 interface OnSendListener {
 
     /** 发送数据完成，发送主题[topic]，内容[data] */
-    fun onSendComplete(topic: String, data: MqttMessage)
+    fun onComplete(topic: String, data: MqttMessage)
 
     /** 发送数据失败，发送主题[topic]，异常[cause] */
-    fun onSendFailure(topic: String, cause: Throwable)
+    fun onFailure(topic: String, cause: Throwable)
 }

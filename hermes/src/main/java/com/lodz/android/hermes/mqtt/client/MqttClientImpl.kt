@@ -43,6 +43,9 @@ class MqttClientImpl : HermesMqttClient {
     /** 是否静默 */
     private var isSilent: Boolean = false
 
+    /** 是否至少连接过一次 */
+    private var isConnectedOnce = false
+
     /** mqtt客户端 */
     private var mMqttClient: MqttClient? = null
 
@@ -54,6 +57,8 @@ class MqttClientImpl : HermesMqttClient {
     private var mOnConnectListener: OnConnectListener? = null
     /** 发送监听器 */
     private var mOnSendListener: OnSendListener? = null
+    /** 构建监听器 */
+    private var mOnBuildListener: OnBuildListener? = null
     /** 订阅主题列表 */
     private var mSubTopics: Array<String>? = null
 
@@ -65,6 +70,8 @@ class MqttClientImpl : HermesMqttClient {
         EventBus.getDefault().register(this)
         registerBroadcastReceivers()
     }
+
+    // TODO: 2023/10/20 断网后再联网后不会自动订阅
 
     override fun setLogTag(tag: String): HermesMqttClient = apply { if (tag.isNotEmpty()) { mTag = tag } }
 
@@ -83,15 +90,16 @@ class MqttClientImpl : HermesMqttClient {
     ): HermesMqttClient {
         val context = mContext
         if (context == null) {
-            MainScope().launch { mOnConnectListener?.onConnectFailure(NullPointerException("context is null , you need call init()")) }
+            MainScope().launch { mOnBuildListener?.onFailure("", NullPointerException("context is null , you need call init()")) }
             return this
         }
+        val key = HermesUtils.getClientKey(context, clientId, serverURI)
         if (serverURI.isEmpty()) {
-            MainScope().launch { mOnConnectListener?.onConnectFailure(IllegalArgumentException("serverURI is empty")) }
+            MainScope().launch { mOnBuildListener?.onFailure(key, IllegalArgumentException("serverURI is empty")) }
             return this
         }
         if (clientId.isEmpty()) {
-            MainScope().launch { mOnConnectListener?.onConnectFailure(IllegalArgumentException("clientId is empty")) }
+            MainScope().launch { mOnBuildListener?.onFailure(key, IllegalArgumentException("clientId is empty")) }
             return this
         }
         var p = persistence
@@ -99,7 +107,7 @@ class MqttClientImpl : HermesMqttClient {
             val file: File? = context.getExternalFilesDir(MqttService.FILE_PERSISTENCE_DIR_NAME)
                 ?: context.getDir(MqttService.FILE_PERSISTENCE_DIR_NAME, Context.MODE_PRIVATE)
             if (file == null) {
-                MainScope().launch { mOnConnectListener?.onConnectFailure(IllegalArgumentException("cannot get file dir")) }
+                MainScope().launch { mOnBuildListener?.onFailure(key, IllegalArgumentException("cannot get file dir")) }
                 return this
             }
             p = MqttDefaultFilePersistence(file.absolutePath)
@@ -108,7 +116,8 @@ class MqttClientImpl : HermesMqttClient {
             this.isAutomaticReconnect = true
             this.isCleanSession = false
         }
-        mMqttClient = MqttClient(context, HermesUtils.getClientKey(context, clientId, serverURI), serverURI, clientId, connectOptions, p, ackType)
+        mMqttClient = MqttClient(context, key, serverURI, clientId, connectOptions, p, ackType)
+        MainScope().launch { mOnBuildListener?.onSuccess(key) }
         return this
     }
 
@@ -128,7 +137,7 @@ class MqttClientImpl : HermesMqttClient {
 
     override fun subscribe(topics: Array<String>) {
         if (topics.isEmpty()){
-            MainScope().launch { mOnSubscribeListener?.onSubscribeFailure(topics, IllegalArgumentException("topics is empty")) }
+            MainScope().launch { mOnSubscribeListener?.onFailure(topics, IllegalArgumentException("topics is empty")) }
             return
         }
         val list = putSubTopic(topics)
@@ -137,11 +146,11 @@ class MqttClientImpl : HermesMqttClient {
         }
         val client = mMqttClient
         if (client == null){ // 未初始化
-            MainScope().launch { mOnSubscribeListener?.onSubscribeFailure(topics, NullPointerException("client is null , you need call build")) }
+            MainScope().launch { mOnSubscribeListener?.onFailure(topics, NullPointerException("client is null , you need call build")) }
             return
         }
         if (!client.getConnection().isConnected()){ // 未连接客户端
-            MainScope().launch { mOnSubscribeListener?.onSubscribeFailure(topics, IllegalStateException("client is not connect")) }
+            MainScope().launch { mOnSubscribeListener?.onFailure(topics, IllegalStateException("client is not connect")) }
             return
         }
         client.getConnection().subscribe(topics)
@@ -149,21 +158,21 @@ class MqttClientImpl : HermesMqttClient {
 
     override fun unsubscribe(topics: Array<String>) {
         if (topics.isEmpty()){
-            MainScope().launch { mOnUnsubscribeListener?.onUnsubscribeFailure(topics, IllegalArgumentException("topics is empty")) }
+            MainScope().launch { mOnUnsubscribeListener?.onFailure(topics, IllegalArgumentException("topics is empty")) }
             return
         }
         val client = mMqttClient
         if (client == null){ // 未初始化
-            MainScope().launch { mOnUnsubscribeListener?.onUnsubscribeFailure(topics, NullPointerException("client is null , you need call build")) }
+            MainScope().launch { mOnUnsubscribeListener?.onFailure(topics, NullPointerException("client is null , you need call build")) }
             return
         }
         if (!client.getConnection().isConnected()){ // 未连接客户端
-            MainScope().launch { mOnUnsubscribeListener?.onUnsubscribeFailure(topics, IllegalStateException("client is not connect")) }
+            MainScope().launch { mOnUnsubscribeListener?.onFailure(topics, IllegalStateException("client is not connect")) }
             return
         }
         val subList = mSubTopics
         if (subList.isNullOrEmpty()){ // 没有主题被订阅
-            MainScope().launch { mOnUnsubscribeListener?.onUnsubscribeFailure(topics, NullPointerException("no topic is subscribed")) }
+            MainScope().launch { mOnUnsubscribeListener?.onFailure(topics, NullPointerException("no topic is subscribed")) }
             return
         }
         val noSubTopicList = arrayListOf<String>() // 未订阅列表
@@ -174,7 +183,7 @@ class MqttClientImpl : HermesMqttClient {
         }
         if (noSubTopicList.isNotEmpty()) {
             MainScope().launch {
-                mOnUnsubscribeListener?.onUnsubscribeFailure(topics,
+                mOnUnsubscribeListener?.onFailure(topics,
                     IllegalStateException("the ${noSubTopicList.toTypedArray().contentToString()} is no subscribed"))
             }
             return
@@ -218,6 +227,9 @@ class MqttClientImpl : HermesMqttClient {
 
     override fun setOnSendListener(listener: OnSendListener?): HermesMqttClient =
         apply { mOnSendListener = listener }
+
+    override fun setOnBuildListener(listener: OnBuildListener?): HermesMqttClient =
+        apply { mOnBuildListener = listener }
 
     override fun release() {
         EventBus.getDefault().unregister(this)
@@ -265,16 +277,16 @@ class MqttClientImpl : HermesMqttClient {
     /** 发布消息事件回调 */
     private fun publishMsgCallback(event: MqttEvent) {
         when (event.result) {
-            MqttEvent.RESULT_SUCCESS -> mOnSendListener?.onSendComplete(event.topic, event.message ?: MqttMessage())
-            MqttEvent.RESULT_FAIL -> mOnSendListener?.onSendFailure(event.topic, event.t ?: NetworkErrorException())
+            MqttEvent.RESULT_SUCCESS -> mOnSendListener?.onComplete(event.topic, event.message ?: MqttMessage())
+            MqttEvent.RESULT_FAIL -> mOnSendListener?.onFailure(event.topic, event.t ?: NetworkErrorException())
         }
     }
 
     /** 订阅事件回调 */
     private fun subscribeCallback(event: MqttEvent) {
         when (event.result) {
-            MqttEvent.RESULT_SUCCESS -> mOnSubscribeListener?.onSubscribeSuccess(event.topics)
-            MqttEvent.RESULT_FAIL -> mOnSubscribeListener?.onSubscribeFailure(event.topics, event.t ?: RuntimeException())
+            MqttEvent.RESULT_SUCCESS -> mOnSubscribeListener?.onSuccess(event.topics)
+            MqttEvent.RESULT_FAIL -> mOnSubscribeListener?.onFailure(event.topics, event.t ?: RuntimeException())
         }
     }
 
@@ -284,9 +296,9 @@ class MqttClientImpl : HermesMqttClient {
             MqttEvent.RESULT_SUCCESS -> {
                 val result = mSubTopics?.filter { !event.topics.contains(it) }
                 mSubTopics = result?.toTypedArray()
-                mOnUnsubscribeListener?.onUnsubscribeSuccess(event.topics)
+                mOnUnsubscribeListener?.onSuccess(event.topics)
             }
-            MqttEvent.RESULT_FAIL -> mOnUnsubscribeListener?.onUnsubscribeFailure(event.topics, event.t ?: RuntimeException())
+            MqttEvent.RESULT_FAIL -> mOnUnsubscribeListener?.onFailure(event.topics, event.t ?: RuntimeException())
         }
     }
 
@@ -313,6 +325,7 @@ class MqttClientImpl : HermesMqttClient {
 
     /** 与服务器连接完成事件回调 */
     private fun connectCompleteCallback(event: MqttEvent) {
+        isConnectedOnce = true
         if (event.isReconnect) {
             subscribe(mSubTopics ?: arrayOf())
         }
@@ -350,7 +363,9 @@ class MqttClientImpl : HermesMqttClient {
         override fun onNetworkChanged(isOnline: Boolean) {
             if (isOnline) {
                 HermesLog.i(mTag, "online , reconnect")
-                connect()
+                if (mMqttClient?.getConnectOptions()?.isAutomaticReconnect == true && isConnectedOnce){
+                    mMqttClient?.getConnection()?.reconnect()
+                }
             } else {
                 HermesLog.i(mTag, "offline , notify clients")
                 mMqttClient?.getConnection()?.offline()

@@ -1,16 +1,11 @@
-package com.lodz.android.hermes.mqtt.base
+package com.lodz.android.hermes.mqtt.base.connection
 
 import android.accounts.NetworkErrorException
 import android.content.Context
 import android.os.PowerManager
 import com.lodz.android.hermes.modules.HermesLog
-import com.lodz.android.hermes.mqtt.base.bean.eun.MqttAction
 import com.lodz.android.hermes.mqtt.base.bean.event.MqttEvent
 import com.lodz.android.hermes.mqtt.base.bean.source.ClientInfoBean
-import com.lodz.android.hermes.mqtt.base.contract.DisconnectMqttEventActionListener
-import com.lodz.android.hermes.mqtt.base.contract.PublishMqttEventActionListener
-import com.lodz.android.hermes.mqtt.base.contract.SubscribeMqttEventActionListener
-import com.lodz.android.hermes.mqtt.base.contract.UnsubscribeMqttEventActionListener
 import com.lodz.android.hermes.mqtt.base.db.DbStoredData
 import com.lodz.android.hermes.mqtt.base.db.MessageStore
 import com.lodz.android.hermes.mqtt.base.db.MessageStoreImpl
@@ -66,6 +61,7 @@ class MqttConnection(
     @Volatile
     private var isConnecting = false
 
+    private var mMqttCallback: MqttCallbackExtended? = null
 
     init {
         try {
@@ -73,15 +69,21 @@ class MqttConnection(
             mClient?.setCallback(this)
         } catch (e: Exception) {
             e.printStackTrace()
-            EventBus.getDefault().post(MqttEvent.createFail(mBean.getClientKey(), MqttAction.ACTION_CREATE_CLIENT, "create MqttAsyncClient fail",e))
         }
     }
 
+    /** 设置MQTT回调监听器 */
+    fun setMqttCallback(callback: MqttCallbackExtended?) {
+        mMqttCallback = callback
+    }
+
     /** 连接服务器 */
-    fun connect() {
+    @JvmOverloads
+    fun connect(actionListener: OnMcActionListener? = null) {
         val client = mClient
         if (client == null) {
-            EventBus.getDefault().post(MqttEvent.createConnectFail(mBean.getClientKey(), "client is null",  NullPointerException()))
+            val e = NullPointerException("client is null")
+            actionListener.fail(e){ MqttEvent.createConnectFail(mBean.getClientKey(), e) }
             return
         }
         HermesLog.d(TAG, "start connect {${mBean.getClientKey()}}")
@@ -94,7 +96,7 @@ class MqttConnection(
         }
         if (client.isConnected) {
             HermesLog.d(TAG, "client is already connected")
-            connectSuccess()
+            connectSuccess(actionListener)
             return
         }
         HermesLog.d(TAG, "start connect!")
@@ -103,26 +105,26 @@ class MqttConnection(
             client.connect(mBean.getConnectOptions(), object :IMqttActionListener{
                 override fun onSuccess(asyncActionToken: IMqttToken?) {
                     HermesLog.i(TAG, "connect success!")
-                    connectSuccess()
+                    connectSuccess(actionListener)
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    HermesLog.e(TAG, "connect fail, call connect to reconnect.reason : ${exception?.message}")
-                    connectFail("connect failure", exception)
+                    HermesLog.e(TAG, "connect fail , reason : ${exception?.message}")
+                    connectFail(actionListener, exception ?: RuntimeException("connect failure"))
                 }
             })
         } catch (e: Exception) {
             e.printStackTrace()
             isConnecting = false
-            connectFail("connect fail", e)
+            connectFail(actionListener, e)
         }
         HermesUtils.releaseWakeLock(mWakeLock)
     }
 
     /** 连接成功 */
-    private fun connectSuccess(){
+    private fun connectSuccess(actionListener: OnMcActionListener?){
         HermesUtils.acquireWakeLock(mWakeLock)
-        EventBus.getDefault().post(MqttEvent.createConnectSuccess(mBean.getClientKey()))
+        actionListener.success { MqttEvent.createConnectSuccess(mBean.getClientKey()) }
         deliverBacklog()
         isConnecting = false
         HermesUtils.releaseWakeLock(mWakeLock)
@@ -133,16 +135,18 @@ class MqttConnection(
         IoScope().launch {
             val backlog = mMessageStore.getAllMessages(mBean.getClientKey())
             for (data in backlog) {
-                launch(Dispatchers.Main) { EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), data, mBean.getAckType())) }
+                launch(Dispatchers.Main) {
+                    mMqttCallback.callbackMessageArrived(data.topic, data.message, data)
+                }
             }
         }
     }
 
     /** 连接失败 */
-    private fun connectFail(errorMsg: String, e: Throwable?) {
+    private fun connectFail(actionListener: OnMcActionListener?, e: Throwable) {
         HermesUtils.acquireWakeLock(mWakeLock)
         isConnecting = false
-        EventBus.getDefault().post(MqttEvent.createConnectFail(mBean.getClientKey(), errorMsg, e ?: RuntimeException()))
+        actionListener.fail(e){ MqttEvent.createConnectFail(mBean.getClientKey(), e) }
         HermesUtils.releaseWakeLock(mWakeLock)
     }
 
@@ -158,19 +162,29 @@ class MqttConnection(
 
     /** 断开连接，在断开连接之前允许完成现有工作的时间[quiesceTimeout]（以毫秒为单位）。 值为零或更低意味着客户端不会停顿 */
     @JvmOverloads
-    fun disconnect(quiesceTimeout: Long = -1) {
+    fun disconnect(quiesceTimeout: Long = -1, actionListener: OnMcActionListener? = null) {
         val client = mClient
         if (client == null) {
-            EventBus.getDefault().post(MqttEvent.createFail(mBean.getClientKey(), MqttAction.ACTION_DISCONNECT, "client is null",  NullPointerException()))
+            val e = NullPointerException("client is null")
+            actionListener.fail(e){ MqttEvent.createDisconnectFail(mBean.getClientKey(), e) }
             return
         }
         HermesLog.d(TAG, "mqtt disconnect {${mBean.getClientKey()}")
         if (!client.isConnected){
-            EventBus.getDefault().post(MqttEvent.createDisconnectSuccess(mBean.getClientKey()))
+            actionListener.success { MqttEvent.createDisconnectSuccess(mBean.getClientKey()) }
             return
         }
         HermesLog.d(TAG, "start disconnect!")
-        val listener = DisconnectMqttEventActionListener(mBean.getClientKey(), "disconnect failure")
+        val listener = object :IMqttActionListener{
+            override fun onSuccess(asyncActionToken: IMqttToken?) {
+                actionListener.success { MqttEvent.createDisconnectSuccess(mBean.getClientKey()) }
+            }
+
+            override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                val e = exception ?: RuntimeException("disconnect failure")
+                actionListener.fail(e){ MqttEvent.createDisconnectFail(mBean.getClientKey(), e) }
+            }
+        }
         try {
             if (quiesceTimeout > 0) {
                 client.disconnect(quiesceTimeout, null, listener)
@@ -179,7 +193,7 @@ class MqttConnection(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            EventBus.getDefault().post(MqttEvent.createDisconnectFail(mBean.getClientKey(), "disconnect fail", e))
+            actionListener.fail(e){ MqttEvent.createDisconnectFail(mBean.getClientKey(), e) }
         }
         if (mBean.getConnectOptions().isCleanSession){
             IoScope().launch { mMessageStore.clearAllMessages(mBean.getClientKey()) }
@@ -191,7 +205,11 @@ class MqttConnection(
     fun isConnected() = mClient?.isConnected ?: false
 
     /** 向主题[topic]发送消息[content] */
-    fun publish(topic: String, content: String): IMqttDeliveryToken? = publish(topic, content.toByteArray())
+    fun publish(
+        topic: String,
+        content: String,
+        actionListener: OnMcPublishListener? = null
+    ): IMqttDeliveryToken? = publish(topic, content.toByteArray(), actionListener = actionListener)
 
     /** 向主题[topic]发送消息，消息内容[payload]，服务质量[qos]一般为0、1、2，MQTT服务器是否保留该消息[isRetained] */
     @JvmOverloads
@@ -199,22 +217,33 @@ class MqttConnection(
         topic: String,
         payload: ByteArray,
         qos: Int = 1,
-        isRetained: Boolean = false
+        isRetained: Boolean = false,
+        actionListener: OnMcPublishListener? = null
     ): IMqttDeliveryToken? {
         val message = MqttMessage(payload)
         message.qos = qos
         message.isRetained = isRetained
-        return publish(topic, message)
+        return publish(topic, message, actionListener)
     }
 
     /** 向主题[topic]发送消息[message] */
-    fun publish(topic: String, message: MqttMessage): IMqttDeliveryToken? {
+    fun publish(topic: String, message: MqttMessage, actionListener: OnMcPublishListener? = null): IMqttDeliveryToken? {
         val client = mClient
         if (client == null) {
-            EventBus.getDefault().post(MqttEvent.createPublishFail(mBean.getClientKey(), topic, "client is null",  NullPointerException()))
+            val e = NullPointerException("client is null")
+            actionListener.fail(topic, e){ MqttEvent.createPublishFail(mBean.getClientKey(), topic, e) }
             return null
         }
-        val listener = PublishMqttEventActionListener(mBean.getClientKey(), "publish failure", topic, message)
+        val listener = object :IMqttActionListener{
+            override fun onSuccess(asyncActionToken: IMqttToken?) {
+                actionListener.success(topic, message){ MqttEvent.createPublishSuccess(mBean.getClientKey(), topic, message) }
+            }
+
+            override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                val e = exception ?: RuntimeException("publish failure")
+                actionListener.fail(topic, e){ MqttEvent.createPublishFail(mBean.getClientKey(), topic, e) }
+            }
+        }
         try {
             if (client.isConnected) {
                 return client.publish(topic, message, null, listener)
@@ -224,44 +253,71 @@ class MqttConnection(
                 // 虽然客户端未连接，但是缓冲已启用，也允许发送消息
                 return client.publish(topic, message, null, listener)
             }
-            EventBus.getDefault().post(MqttEvent.createPublishFail(mBean.getClientKey(), topic, "client is not connected, can not send message", RuntimeException()))
+            val e = RuntimeException("client is not connected, can not send message")
+            actionListener.fail(topic, e){ MqttEvent.createPublishFail(mBean.getClientKey(), topic, e) }
         } catch (e: Exception) {
             e.printStackTrace()
-            EventBus.getDefault().post(MqttEvent.createPublishFail(mBean.getClientKey(), topic, "publish fail", e))
+            actionListener.fail(topic, e){ MqttEvent.createPublishFail(mBean.getClientKey(), topic, e) }
         }
         return null
     }
 
     /** 订阅主题[topic]，服务质量[qos]一般为0、1、2，消息监听[listeners] */
     @JvmOverloads
-    fun subscribe(topic: String, qos: Int = 1, listeners: Array<IMqttMessageListener>? = null) {
-        subscribe(arrayOf(topic), intArrayOf(qos), listeners)
+    fun subscribe(
+        topic: String,
+        qos: Int = 1,
+        listeners: Array<IMqttMessageListener>? = null,
+        actionListener: OnMcSubListener? = null
+    ) {
+        subscribe(arrayOf(topic), intArrayOf(qos), listeners, actionListener)
     }
 
     /** 订阅多主题[topics]，消息监听[listeners] */
     @JvmOverloads
-    fun subscribe(topics: Array<String>, listeners: Array<IMqttMessageListener>? = null) {
+    fun subscribe(
+        topics: Array<String>,
+        listeners: Array<IMqttMessageListener>? = null,
+        actionListener: OnMcSubListener? = null
+    ) {
         val qos = IntArray(topics.size)
         topics.forEachIndexed { i, s ->
             qos[i] = 1
         }
-        subscribe(topics, qos, listeners)
+        subscribe(topics, qos, listeners, actionListener)
     }
 
     /** 订阅多主题[topics]，服务质量[qos]一般为0、1、2，消息监听[listeners] */
     @JvmOverloads
-    fun subscribe(topics: Array<String>, qos: IntArray, listeners: Array<IMqttMessageListener>? = null) {
+    fun subscribe(
+        topics: Array<String>,
+        qos: IntArray,
+        listeners: Array<IMqttMessageListener>? = null,
+        actionListener: OnMcSubListener? = null
+    ) {
         HermesLog.d(TAG, "subscribe topics : ${topics.contentToString()} , qos : ${qos.contentToString()}")
         val client = mClient
         if (client == null) {
-            EventBus.getDefault().post(MqttEvent.createSubscribeFail(mBean.getClientKey(), topics, "client is null",  NullPointerException()))
+            val e = NullPointerException("client is null")
+            actionListener.fail(topics, e){ MqttEvent.createSubscribeFail(mBean.getClientKey(), topics, e) }
             return
         }
         if (!client.isConnected) {
-            EventBus.getDefault().post(MqttEvent.createSubscribeFail(mBean.getClientKey(), topics, "client is disconnect",  IllegalStateException()))
+            val e = IllegalStateException("client is disconnect")
+            actionListener.fail(topics, e){ MqttEvent.createSubscribeFail(mBean.getClientKey(), topics, e) }
             return
         }
-        val listener = SubscribeMqttEventActionListener(mBean.getClientKey(), "subscribe failure", topics)
+
+        val listener = object : IMqttActionListener {
+            override fun onSuccess(asyncActionToken: IMqttToken?) {
+                actionListener.success(topics){ MqttEvent.createSubscribeSuccess(mBean.getClientKey(), topics) }
+            }
+
+            override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                val e = exception ?: RuntimeException("subscribe failure")
+                actionListener.fail(topics, e){ MqttEvent.createSubscribeFail(mBean.getClientKey(), topics, e) }
+            }
+        }
         try {
             if (listeners.isNullOrEmpty()) {
                 client.subscribe(topics, qos, null, listener)
@@ -270,32 +326,43 @@ class MqttConnection(
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            EventBus.getDefault().post(MqttEvent.createSubscribeFail(mBean.getClientKey(), topics, "subscribe fail",  IllegalStateException()))
+            actionListener.fail(topics, e){ MqttEvent.createSubscribeFail(mBean.getClientKey(), topics, e) }
         }
     }
 
     /** 取消订阅主题[topic] */
-    fun unsubscribe(topic: String) {
-        unsubscribe(arrayOf(topic))
+    fun unsubscribe(topic: String, actionListener: OnMcSubListener? = null) {
+        unsubscribe(arrayOf(topic), actionListener)
     }
 
     /** 取消订阅主题[topics] */
-    fun unsubscribe(topics: Array<String>) {
+    fun unsubscribe(topics: Array<String>, actionListener: OnMcSubListener? = null) {
         HermesLog.d(TAG, "unsubscribe topic : ${topics.contentToString()}")
         val client = mClient
         if (client == null) {
-            EventBus.getDefault().post(MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topics, "client is null",  NullPointerException()))
+            val e = NullPointerException("client is null")
+            actionListener.fail(topics, e){ MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topics, e) }
             return
         }
         if (!client.isConnected) {
-            EventBus.getDefault().post(MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topics, "client is disconnect",  IllegalStateException()))
+            val e = IllegalStateException("client is disconnect")
+            actionListener.fail(topics, e){ MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topics, e) }
             return
         }
         try {
-            client.unsubscribe(topics, null,  UnsubscribeMqttEventActionListener(mBean.getClientKey(), "unsubscribe failure", topics))
+            client.unsubscribe(topics, null, object : IMqttActionListener {
+                override fun onSuccess(asyncActionToken: IMqttToken?) {
+                    actionListener.success(topics){ MqttEvent.createUnsubscribeSuccess(mBean.getClientKey(), topics) }
+                }
+
+                override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                    val e = exception ?: RuntimeException("unsubscribe failure")
+                    actionListener.fail(topics, e){ MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topics, e) }
+                }
+            })
         } catch (e: Exception) {
             e.printStackTrace()
-            EventBus.getDefault().post(MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topics, "unsubscribe fail",  IllegalStateException()))
+            actionListener.fail(topics, e){ MqttEvent.createUnsubscribeFail(mBean.getClientKey(), topics, e) }
         }
     }
 
@@ -306,8 +373,9 @@ class MqttConnection(
 
     /** 连接丢失回调，断连原因[cause] */
     override fun connectionLost(cause: Throwable?) {
-        HermesLog.d(TAG, "connectionLost case : $cause")
-        EventBus.getDefault().post(MqttEvent.createConnectionLost(mBean.getClientKey(), cause))
+        val t = cause ?: NetworkErrorException("mqtt connection lost")
+        HermesLog.d(TAG, "connectionLost case : $t")
+        mMqttCallback.callbackConnectionLost(t){ MqttEvent.createConnectionLost(mBean.getClientKey(), t) }
         val client = mClient ?: return
         try {
             if (!mBean.getConnectOptions().isAutomaticReconnect) {
@@ -327,20 +395,20 @@ class MqttConnection(
         IoScope().launch {
             val messageId = mMessageStore.saveMessage(mBean.getClientKey(), topic, message)
             launch(Dispatchers.Main) {
-                EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), DbStoredData(messageId, mBean.getClientKey(), topic, message), mBean.getAckType()))
+                mMqttCallback.callbackMessageArrived(topic, message, DbStoredData(messageId, mBean.getClientKey(), topic, message))
             }
         }
     }
 
     /** 发送的消息已到达 */
     override fun deliveryComplete(token: IMqttDeliveryToken?) {
-        HermesLog.d(TAG, "deliveryComplete IMqttDeliveryToken : $token");
-        EventBus.getDefault().post(MqttEvent.createDeliveryComplete(mBean.getClientKey(), token))
+        HermesLog.d(TAG, "deliveryComplete IMqttDeliveryToken : $token")
+        mMqttCallback.callbackDeliveryComplete(token)
     }
 
     override fun connectComplete(reconnect: Boolean, serverURI: String) {
         isConnecting = false
-        EventBus.getDefault().post(MqttEvent.createConnectComplete(mBean.getClientKey(), reconnect, serverURI))
+        mMqttCallback.callbackConnectComplete(reconnect, serverURI)
     }
 
     /*-------------------------------------- 实现MqttCallbackExtended ----------------------------------------------------*/
@@ -349,7 +417,7 @@ class MqttConnection(
     fun offline() {
         val client = mClient ?: return
         if (client.isConnected && !mBean.getConnectOptions().isCleanSession) {
-            connectionLost(NetworkErrorException("mqtt offline"));
+            connectionLost(NetworkErrorException("mqtt offline"))
         }
     }
 
@@ -372,7 +440,6 @@ class MqttConnection(
             } catch (e: Exception) {
                 e.printStackTrace()
                 isConnecting = false
-                EventBus.getDefault().post(MqttEvent.createConnectFail(mBean.getClientKey(), "reconnect fail", e))
             }
             return
         }
@@ -402,4 +469,95 @@ class MqttConnection(
     fun acknowledgeMessageArrival(messageId: String) {
         IoScope().launch { mMessageStore.deleteArrivedMessage(mBean.getClientKey(), messageId) }
     }
+
+    /** 执行操作成功回调 */
+    private fun OnMcActionListener?.success(block: () -> MqttEvent) {
+        if (this != null) {
+            this.onSuccess(mBean.getClientKey())
+        } else {
+            EventBus.getDefault().post(block.invoke())
+        }
+    }
+
+    /** 执行操作失败回调 */
+    private fun OnMcActionListener?.fail(t: Throwable, block: () -> MqttEvent) {
+        if (this != null) {
+            this.onFail(mBean.getClientKey(), t)
+        } else {
+            EventBus.getDefault().post(block.invoke())
+        }
+    }
+
+    /** 执行消息发布操作成功回调 */
+    private fun OnMcPublishListener?.success(topic: String, message: MqttMessage, block: () -> MqttEvent) {
+        if (this != null) {
+            this.onSuccess(mBean.getClientKey(), topic, message)
+        } else {
+            EventBus.getDefault().post(block.invoke())
+        }
+    }
+
+    /** 执行消息发布操作失败回调 */
+    private fun OnMcPublishListener?.fail(topic: String, t: Throwable, block: () -> MqttEvent) {
+        if (this != null) {
+            this.onFail(mBean.getClientKey(), topic, t)
+        } else {
+            EventBus.getDefault().post(block.invoke())
+        }
+    }
+
+    /** 执行订阅/取消订阅操作成功回调 */
+    private fun OnMcSubListener?.success(topics: Array<String>, block: () -> MqttEvent) {
+        if (this != null) {
+            this.onSuccess(mBean.getClientKey(), topics)
+        } else {
+            EventBus.getDefault().post(block.invoke())
+        }
+    }
+
+    /** 执行订阅/取消订阅操作失败回调 */
+    private fun OnMcSubListener?.fail(topics: Array<String>, t: Throwable, block: () -> MqttEvent) {
+        if (this != null) {
+            this.onFail(mBean.getClientKey(), topics, t)
+        } else {
+            EventBus.getDefault().post(block.invoke())
+        }
+    }
+
+    /** 回调连接完成 */
+    private fun MqttCallbackExtended?.callbackConnectComplete(reconnect: Boolean, serverURI: String) {
+        if (this != null) {
+            this.connectComplete(reconnect, serverURI)
+        } else {
+            EventBus.getDefault().post(MqttEvent.createConnectComplete(mBean.getClientKey(), reconnect, serverURI))
+        }
+    }
+
+    /** 回调连接丢失 */
+    private fun MqttCallbackExtended?.callbackConnectionLost(t: Throwable, block: () -> MqttEvent) {
+        if (this != null) {
+            this.connectionLost(t)
+        } else {
+            EventBus.getDefault().post(block.invoke())
+        }
+    }
+
+    /** 回调发送消息传递完成 */
+    private fun MqttCallbackExtended?.callbackDeliveryComplete(token: IMqttDeliveryToken?) {
+        if (this != null) {
+            this.deliveryComplete(token)
+        } else {
+            EventBus.getDefault().post(MqttEvent.createDeliveryComplete(mBean.getClientKey(), token))
+        }
+    }
+
+    /** 回调消息到达 */
+    private fun MqttCallbackExtended?.callbackMessageArrived(topic: String, message: MqttMessage, data: DbStoredData) {
+        if (this != null) {
+            this.messageArrived(topic, message)
+        } else {
+            EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), data, mBean.getAckType()))
+        }
+    }
+
 }

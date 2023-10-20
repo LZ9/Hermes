@@ -1,9 +1,8 @@
 package com.lodz.android.hermes.mqtt.base.bean.source
 
 import android.content.Context
-import com.lodz.android.hermes.mqtt.base.MqttConnection
+import com.lodz.android.hermes.mqtt.base.connection.MqttConnection
 import com.lodz.android.hermes.mqtt.base.bean.eun.Ack
-import com.lodz.android.hermes.mqtt.base.db.MessageStore
 import org.eclipse.paho.client.mqttv3.MqttClientPersistence
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 

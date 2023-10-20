@@ -76,9 +76,9 @@ class MqttEvent(
         }
 
         /** 创建连接丢失事件 */
-        fun createConnectionLost(clientKey: String, t: Throwable?): MqttEvent {
+        fun createConnectionLost(clientKey: String, t: Throwable): MqttEvent {
             val event = MqttEvent(clientKey, MqttAction.ACTION_CONNECTION_LOST, RESULT_SUCCESS)
-            event.t = t ?: NetworkErrorException()
+            event.t = t
             return event
         }
 
@@ -106,9 +106,8 @@ class MqttEvent(
         }
 
         /** 创建消息发布失败事件 */
-        fun createPublishFail(clientKey: String, topic: String, errorMsg: String, t: Throwable): MqttEvent {
+        fun createPublishFail(clientKey: String, topic: String, t: Throwable): MqttEvent {
             val event = MqttEvent(clientKey, MqttAction.ACTION_PUBLISH_MSG, RESULT_FAIL)
-            event.errorMsg = errorMsg
             event.t = t
             event.topic = topic
             return event
@@ -122,9 +121,8 @@ class MqttEvent(
         }
 
         /** 创建订阅失败事件 */
-        fun createSubscribeFail(clientKey: String, topics: Array<String>, errorMsg: String, t: Throwable): MqttEvent {
+        fun createSubscribeFail(clientKey: String, topics: Array<String>, t: Throwable): MqttEvent {
             val event = MqttEvent(clientKey, MqttAction.ACTION_SUBSCRIBE, RESULT_FAIL)
-            event.errorMsg = errorMsg
             event.t = t
             event.topics = topics
             return event
@@ -138,9 +136,8 @@ class MqttEvent(
         }
 
         /** 创建解订阅失败事件 */
-        fun createUnsubscribeFail(clientKey: String, topics: Array<String>, errorMsg: String, t: Throwable): MqttEvent {
+        fun createUnsubscribeFail(clientKey: String, topics: Array<String>, t: Throwable): MqttEvent {
             val event = MqttEvent(clientKey, MqttAction.ACTION_UNSUBSCRIBE, RESULT_FAIL)
-            event.errorMsg = errorMsg
             event.t = t
             event.topics = topics
             return event
@@ -150,17 +147,15 @@ class MqttEvent(
         fun createConnectSuccess(clientKey: String): MqttEvent = MqttEvent(clientKey, MqttAction.ACTION_CONNECT, RESULT_SUCCESS)
 
         /** 创建连接失败事件 */
-        fun createConnectFail(clientKey: String, errorMsg: String, t: Throwable): MqttEvent {
+        fun createConnectFail(clientKey: String, t: Throwable): MqttEvent {
             val event = MqttEvent(clientKey, MqttAction.ACTION_CONNECT, RESULT_FAIL)
-            event.errorMsg = errorMsg
             event.t = t
             return event
         }
 
         /** 创建失败事件 */
-        fun createDisconnectFail(clientKey: String, errorMsg: String, t: Throwable): MqttEvent {
+        fun createDisconnectFail(clientKey: String, t: Throwable): MqttEvent {
             val event = MqttEvent(clientKey, MqttAction.ACTION_DISCONNECT, RESULT_FAIL)
-            event.errorMsg = errorMsg
             event.t = t
             return event
         }

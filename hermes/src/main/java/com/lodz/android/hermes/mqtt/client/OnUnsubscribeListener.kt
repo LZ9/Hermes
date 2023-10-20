@@ -8,9 +8,9 @@ package com.lodz.android.hermes.mqtt.client
 interface OnUnsubscribeListener {
 
     /** 解除订阅成功，主题名称[topics] */
-    fun onUnsubscribeSuccess(topics: Array<String>)
+    fun onSuccess(topics: Array<String>)
 
     /** 解除订阅失败，主题名称[topics]，异常[cause] */
-    fun onUnsubscribeFailure(topics: Array<String>, cause: Throwable)
+    fun onFailure(topics: Array<String>, cause: Throwable)
 
 }

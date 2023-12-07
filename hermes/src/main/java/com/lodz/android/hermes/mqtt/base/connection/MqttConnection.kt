@@ -414,14 +414,6 @@ class MqttConnection(
 
     /*-------------------------------------- 实现MqttCallbackExtended ----------------------------------------------------*/
 
-    /** 设置客户端离线 */
-    fun offline() {
-        val client = mClient ?: return
-        if (client.isConnected && !mBean.getConnectOptions().isCleanSession) {
-            connectionLost(NetworkErrorException("mqtt offline"))
-        }
-    }
-
     /** 重连 */
     fun reconnect() {
         val client = mClient ?: return

@@ -83,7 +83,7 @@ class MqttService : Service() {
                 reconnectAll()
             } else {
                 HermesLog.i(TAG, "offline , notify clients")
-                notifyClientsOffline()
+//                notifyClientsOffline()
             }
         }
     }
@@ -264,7 +264,7 @@ class MqttService : Service() {
     /** 通知客户端离线 */
     private fun notifyClientsOffline() {
         for (entry in mClientMap) {
-            entry.value.getConnection().offline()
+            entry.value.getConnection().disconnect()
         }
     }
 

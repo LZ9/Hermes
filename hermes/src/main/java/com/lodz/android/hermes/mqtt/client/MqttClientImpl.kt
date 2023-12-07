@@ -68,8 +68,6 @@ class MqttClientImpl : HermesMqttClient {
         registerBroadcastReceivers()
     }
 
-    // TODO: 2023/10/20 断网后再联网后不会自动订阅
-
     override fun setLogTag(tag: String): HermesMqttClient = apply { if (tag.isNotEmpty()) { mTag = tag } }
 
     override fun setSilent(isSilent: Boolean): HermesMqttClient = apply { this.isSilent = isSilent }
@@ -131,10 +129,11 @@ class MqttClientImpl : HermesMqttClient {
             }
 
             override fun connectComplete(reconnect: Boolean, serverURI: String) {
-                if (reconnect) {
-                    subscribe(mSubTopics ?: arrayOf())
-                }
                 MainScope().launch { mOnConnectListener?.onConnectComplete(reconnect) }
+                val topics = mSubTopics ?: arrayOf()
+                if (topics.isNotEmpty()){
+                    subscribe(topics)
+                }
             }
         })
         MainScope().launch { mOnBuildListener?.onSuccess(key) }
@@ -263,10 +262,6 @@ class MqttClientImpl : HermesMqttClient {
                 disconnectedBufferOptions.isPersistBuffer = false
                 disconnectedBufferOptions.isDeleteOldestMessages = false
                 mMqttClient?.getConnection()?.setBufferOpts(disconnectedBufferOptions)
-                val topics = mSubTopics ?: arrayOf()
-                if (topics.isNotEmpty()){
-                    subscribe(topics)
-                }
             }
 
             override fun onFail(clientKey: String, t: Throwable) {
@@ -345,7 +340,6 @@ class MqttClientImpl : HermesMqttClient {
                 }
             } else {
                 HermesLog.i(mTag, "offline , notify clients")
-                mMqttClient?.getConnection()?.offline()
             }
         }
     }

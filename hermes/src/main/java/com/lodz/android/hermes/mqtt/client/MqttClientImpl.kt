@@ -7,9 +7,11 @@ import android.net.ConnectivityManager
 import com.lodz.android.hermes.contract.*
 import com.lodz.android.hermes.modules.HermesLog
 import com.lodz.android.hermes.mqtt.base.bean.eun.Ack
-import com.lodz.android.hermes.mqtt.base.bean.eun.MqttAction
-import com.lodz.android.hermes.mqtt.base.bean.event.MqttEvent
 import com.lodz.android.hermes.mqtt.base.bean.source.MqttClient
+import com.lodz.android.hermes.mqtt.base.connection.OnMcActionListener
+import com.lodz.android.hermes.mqtt.base.connection.OnMcPublishListener
+import com.lodz.android.hermes.mqtt.base.connection.OnMcSubListener
+import com.lodz.android.hermes.mqtt.base.db.DbStoredData
 import com.lodz.android.hermes.mqtt.base.sender.NetworkConnectionReceiver
 import com.lodz.android.hermes.mqtt.base.service.MqttService
 import com.lodz.android.hermes.utils.HermesUtils
@@ -21,11 +23,7 @@ import org.eclipse.paho.client.mqttv3.MqttClientPersistence
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions
 import org.eclipse.paho.client.mqttv3.MqttMessage
 import org.eclipse.paho.client.mqttv3.persist.MqttDefaultFilePersistence
-import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 import java.io.File
-import java.lang.RuntimeException
 
 /**
  * MQTT推送客户端实现
@@ -67,7 +65,6 @@ class MqttClientImpl : HermesMqttClient {
 
     override fun init(context: Context): HermesMqttClient = apply {
         mContext = context
-        EventBus.getDefault().register(this)
         registerBroadcastReceivers()
     }
 
@@ -117,6 +114,29 @@ class MqttClientImpl : HermesMqttClient {
             this.isCleanSession = false
         }
         mMqttClient = MqttClient(context, key, serverURI, clientId, connectOptions, p, ackType)
+        mMqttClient?.getConnection()?.setMqttCallback(object : MqttClientCallback {
+            override fun connectionLost(cause: Throwable) {
+                MainScope().launch { mOnConnectListener?.onConnectionLost(cause) }
+            }
+
+            override fun messageArrived(topic: String, message: MqttMessage, data: DbStoredData) {
+                if (ackType == Ack.AUTO_ACK){//自动确认到达时删除数据库内的缓存
+                    mMqttClient?.getConnection()?.acknowledgeMessageArrival(data.messageId)
+                }
+                MainScope().launch { mOnSubscribeListener?.onMsgArrived(topic, message) }
+            }
+
+            override fun deliveryComplete(token: IMqttDeliveryToken?) {
+                MainScope().launch { mOnConnectListener?.deliveryComplete(token) }
+            }
+
+            override fun connectComplete(reconnect: Boolean, serverURI: String) {
+                if (reconnect) {
+                    subscribe(mSubTopics ?: arrayOf())
+                }
+                MainScope().launch { mOnConnectListener?.onConnectComplete(reconnect) }
+            }
+        })
         MainScope().launch { mOnBuildListener?.onSuccess(key) }
         return this
     }
@@ -131,49 +151,71 @@ class MqttClientImpl : HermesMqttClient {
         return mSubTopics
     }
 
-    override fun sendData(topic: String, data: String): IMqttDeliveryToken? = mMqttClient?.getConnection()?.publish(topic, data)
+    override fun sendData(topic: String, data: String): IMqttDeliveryToken? = sendData(topic, data.toByteArray())
 
-    override fun sendData(topic: String, data: ByteArray): IMqttDeliveryToken? = mMqttClient?.getConnection()?.publish(topic, data)
+    override fun sendData(topic: String, data: ByteArray): IMqttDeliveryToken? =
+        mMqttClient?.getConnection()?.publish(topic, data, actionListener = object : OnMcPublishListener {
+            override fun onSuccess(clientKey: String, topic: String, message: MqttMessage) {
+                MainScope().launch { mOnSendListener?.onComplete(topic, message) }
+            }
 
-    override fun subscribe(topics: Array<String>) {
+            override fun onFail(clientKey: String, topic: String, t: Throwable) {
+                MainScope().launch { mOnSendListener?.onFailure(topic, t) }
+            }
+        })
+
+    override fun subscribe(topics: Array<String>): HermesMqttClient {
         if (topics.isEmpty()){
             MainScope().launch { mOnSubscribeListener?.onFailure(topics, IllegalArgumentException("topics is empty")) }
-            return
+            return this
         }
         val list = putSubTopic(topics)
         if (list.isNullOrEmpty()) { // 没有可以订阅的主题
-            return
+            return this
+        }
+        if (!isConnectedOnce){
+            return this
         }
         val client = mMqttClient
         if (client == null){ // 未初始化
             MainScope().launch { mOnSubscribeListener?.onFailure(topics, NullPointerException("client is null , you need call build")) }
-            return
+            return this
         }
         if (!client.getConnection().isConnected()){ // 未连接客户端
             MainScope().launch { mOnSubscribeListener?.onFailure(topics, IllegalStateException("client is not connect")) }
-            return
+            return this
         }
-        client.getConnection().subscribe(topics)
+        client.getConnection().subscribe(topics, actionListener = object : OnMcSubListener {
+            override fun onSuccess(clientKey: String, topics: Array<String>) {
+                MainScope().launch { mOnSubscribeListener?.onSuccess(topics) }
+            }
+
+            override fun onFail(clientKey: String, topics: Array<String>, t: Throwable) {
+                MainScope().launch { mOnSubscribeListener?.onFailure(topics, t) }
+            }
+
+        })
+        return this
     }
 
-    override fun unsubscribe(topics: Array<String>) {
+    override fun unsubscribe(topics: Array<String>): HermesMqttClient {
         if (topics.isEmpty()){
             MainScope().launch { mOnUnsubscribeListener?.onFailure(topics, IllegalArgumentException("topics is empty")) }
-            return
+            return this
         }
         val client = mMqttClient
         if (client == null){ // 未初始化
             MainScope().launch { mOnUnsubscribeListener?.onFailure(topics, NullPointerException("client is null , you need call build")) }
-            return
+            return this
         }
         if (!client.getConnection().isConnected()){ // 未连接客户端
             MainScope().launch { mOnUnsubscribeListener?.onFailure(topics, IllegalStateException("client is not connect")) }
-            return
+            return this
         }
         val subList = mSubTopics
         if (subList.isNullOrEmpty()){ // 没有主题被订阅
             MainScope().launch { mOnUnsubscribeListener?.onFailure(topics, NullPointerException("no topic is subscribed")) }
-            return
+            return this
         }
         val noSubTopicList = arrayListOf<String>() // 未订阅列表
         for (t in topics) {
@@ -186,9 +228,20 @@ class MqttClientImpl : HermesMqttClient {
                 mOnUnsubscribeListener?.onFailure(topics,
                     IllegalStateException("the ${noSubTopicList.toTypedArray().contentToString()} is no subscribed"))
             }
-            return
+            return this
         }
-        client.getConnection().unsubscribe(topics)
+        client.getConnection().unsubscribe(topics, object : OnMcSubListener {
+            override fun onSuccess(clientKey: String, topics: Array<String>) {
+                val result = mSubTopics?.filter { !topics.contains(it) }
+                mSubTopics = result?.toTypedArray()
+                MainScope().launch { mOnUnsubscribeListener?.onSuccess(topics) }
+            }
+
+            override fun onFail(clientKey: String, topics: Array<String>, t: Throwable) {
+                MainScope().launch { mOnUnsubscribeListener?.onFailure(topics, t) }
+            }
+        })
+        return this
     }
 
     override fun connect() {
@@ -201,7 +254,25 @@ class MqttClientImpl : HermesMqttClient {
             MainScope().launch { mOnConnectListener?.onConnectComplete(false) }
             return
         }
-        client.getConnection().connect()
+        client.getConnection().connect(object : OnMcActionListener {
+            override fun onSuccess(clientKey: String) {
+                isConnectedOnce = true
+                val disconnectedBufferOptions = DisconnectedBufferOptions()
+                disconnectedBufferOptions.isBufferEnabled = true
+                disconnectedBufferOptions.bufferSize = 100
+                disconnectedBufferOptions.isPersistBuffer = false
+                disconnectedBufferOptions.isDeleteOldestMessages = false
+                mMqttClient?.getConnection()?.setBufferOpts(disconnectedBufferOptions)
+                val topics = mSubTopics ?: arrayOf()
+                if (topics.isNotEmpty()){
+                    subscribe(topics)
+                }
+            }
+
+            override fun onFail(clientKey: String, t: Throwable) {
+                MainScope().launch { mOnConnectListener?.onConnectFailure(t) }
+            }
+        })
     }
 
     override fun disconnect(quiesceTimeout: Long) {
@@ -209,7 +280,15 @@ class MqttClientImpl : HermesMqttClient {
         if (!client.getConnection().isConnected()) { // 客户端未连接
             return
         }
-        client.getConnection().disconnect(quiesceTimeout)
+        client.getConnection().disconnect(quiesceTimeout, object : OnMcActionListener {
+            override fun onSuccess(clientKey: String) {
+                MainScope().launch { mOnConnectListener?.onConnectionLost(NetworkErrorException()) }
+            }
+
+            override fun onFail(clientKey: String, t: Throwable) {
+                MainScope().launch { mOnConnectListener?.onConnectionLost(t) }
+            }
+        })
     }
 
     override fun isConnected(): Boolean = mMqttClient?.getConnection()?.isConnected() ?: false
@@ -232,112 +311,10 @@ class MqttClientImpl : HermesMqttClient {
         apply { mOnBuildListener = listener }
 
     override fun release() {
-        EventBus.getDefault().unregister(this)
         unregisterBroadcastReceivers()
         mMqttClient?.getConnection()?.disconnect()
         mMqttClient?.getConnection()?.close()
         mMqttClient = null
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onMqttEvent(event: MqttEvent) {
-        when (event.action) {
-            MqttAction.ACTION_PUBLISH_MSG -> publishMsgCallback(event)
-            MqttAction.ACTION_MSG_ARRIVED -> msgArrivedCallback(event)
-            MqttAction.ACTION_CONNECTION_LOST -> connectionLostCallback(event)
-            MqttAction.ACTION_DELIVERY_COMPLETE -> deliveryCompleteCallback(event)
-            MqttAction.ACTION_CONNECT_COMPLETE -> connectCompleteCallback(event)
-            MqttAction.ACTION_SUBSCRIBE -> subscribeCallback(event)
-            MqttAction.ACTION_UNSUBSCRIBE -> unsubscribeCallback(event)
-            MqttAction.ACTION_CONNECT -> connectCallback(event)
-            MqttAction.ACTION_DISCONNECT -> disconnectCallback(event)
-            else -> {}
-        }
-    }
-
-    /** 连接事件回调 */
-    private fun connectCallback(event: MqttEvent) {
-        when (event.result) {
-            MqttEvent.RESULT_SUCCESS -> {
-                val disconnectedBufferOptions = DisconnectedBufferOptions()
-                disconnectedBufferOptions.isBufferEnabled = true
-                disconnectedBufferOptions.bufferSize = 100
-                disconnectedBufferOptions.isPersistBuffer = false
-                disconnectedBufferOptions.isDeleteOldestMessages = false
-                mMqttClient?.getConnection()?.setBufferOpts(disconnectedBufferOptions)
-                val topics = mSubTopics ?: arrayOf()
-                if (topics.isNotEmpty()){
-                    subscribe(topics)
-                }
-            }
-            MqttEvent.RESULT_FAIL -> mOnConnectListener?.onConnectFailure(event.t ?: NetworkErrorException())
-        }
-    }
-
-    /** 发布消息事件回调 */
-    private fun publishMsgCallback(event: MqttEvent) {
-        when (event.result) {
-            MqttEvent.RESULT_SUCCESS -> mOnSendListener?.onComplete(event.topic, event.message ?: MqttMessage())
-            MqttEvent.RESULT_FAIL -> mOnSendListener?.onFailure(event.topic, event.t ?: NetworkErrorException())
-        }
-    }
-
-    /** 订阅事件回调 */
-    private fun subscribeCallback(event: MqttEvent) {
-        when (event.result) {
-            MqttEvent.RESULT_SUCCESS -> mOnSubscribeListener?.onSuccess(event.topics)
-            MqttEvent.RESULT_FAIL -> mOnSubscribeListener?.onFailure(event.topics, event.t ?: RuntimeException())
-        }
-    }
-
-    /** 解订阅事件回调 */
-    private fun unsubscribeCallback(event: MqttEvent) {
-        when (event.result) {
-            MqttEvent.RESULT_SUCCESS -> {
-                val result = mSubTopics?.filter { !event.topics.contains(it) }
-                mSubTopics = result?.toTypedArray()
-                mOnUnsubscribeListener?.onSuccess(event.topics)
-            }
-            MqttEvent.RESULT_FAIL -> mOnUnsubscribeListener?.onFailure(event.topics, event.t ?: RuntimeException())
-        }
-    }
-
-    /** 消息到达事件回调 */
-    private fun msgArrivedCallback(event: MqttEvent) {
-        val data = event.data
-        if (data != null) {
-            if (event.ack == Ack.AUTO_ACK){//自动确认到达时删除数据库内的缓存
-                mMqttClient?.getConnection()?.acknowledgeMessageArrival(data.messageId)
-            }
-            mOnSubscribeListener?.onMsgArrived(data.topic, data.message)
-        }
-    }
-
-    /** 连接丢失事件回调 */
-    private fun connectionLostCallback(event: MqttEvent) {
-        mOnConnectListener?.onConnectionLost(event.t ?: NetworkErrorException())
-    }
-
-    /** 消息传递到服务端完成事件回调 */
-    private fun deliveryCompleteCallback(event: MqttEvent) {
-        mOnConnectListener?.deliveryComplete(event.token)
-    }
-
-    /** 与服务器连接完成事件回调 */
-    private fun connectCompleteCallback(event: MqttEvent) {
-        isConnectedOnce = true
-        if (event.isReconnect) {
-            subscribe(mSubTopics ?: arrayOf())
-        }
-        mOnConnectListener?.onConnectComplete(event.isReconnect)
-    }
-
-    /** 断开连接事件回调 */
-    private fun disconnectCallback(event: MqttEvent) {
-        when (event.result) {
-            MqttEvent.RESULT_SUCCESS -> mOnConnectListener?.onConnectionLost(event.t ?: NetworkErrorException())
-            MqttEvent.RESULT_FAIL -> {}
-        }
     }
 
     /** 注册网络变化广播接收器 */

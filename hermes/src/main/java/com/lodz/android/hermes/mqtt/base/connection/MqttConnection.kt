@@ -10,6 +10,7 @@ import com.lodz.android.hermes.mqtt.base.db.DbStoredData
 import com.lodz.android.hermes.mqtt.base.db.MessageStore
 import com.lodz.android.hermes.mqtt.base.db.MessageStoreImpl
 import com.lodz.android.hermes.mqtt.base.sender.AlarmPingSender
+import com.lodz.android.hermes.mqtt.client.MqttClientCallback
 import com.lodz.android.hermes.utils.IoScope
 import com.lodz.android.hermes.utils.HermesUtils
 import kotlinx.coroutines.Dispatchers
@@ -61,7 +62,7 @@ class MqttConnection(
     @Volatile
     private var isConnecting = false
 
-    private var mMqttCallback: MqttCallbackExtended? = null
+    private var mMqttCallback: MqttClientCallback? = null
 
     init {
         try {
@@ -73,7 +74,7 @@ class MqttConnection(
     }
 
     /** 设置MQTT回调监听器 */
-    fun setMqttCallback(callback: MqttCallbackExtended?) {
+    fun setMqttCallback(callback: MqttClientCallback?) {
         mMqttCallback = callback
     }
 
@@ -525,7 +526,7 @@ class MqttConnection(
     }
 
     /** 回调连接完成 */
-    private fun MqttCallbackExtended?.callbackConnectComplete(reconnect: Boolean, serverURI: String) {
+    private fun MqttClientCallback?.callbackConnectComplete(reconnect: Boolean, serverURI: String) {
         if (this != null) {
             this.connectComplete(reconnect, serverURI)
         } else {
@@ -534,7 +535,7 @@ class MqttConnection(
     }
 
     /** 回调连接丢失 */
-    private fun MqttCallbackExtended?.callbackConnectionLost(t: Throwable, block: () -> MqttEvent) {
+    private fun MqttClientCallback?.callbackConnectionLost(t: Throwable, block: () -> MqttEvent) {
         if (this != null) {
             this.connectionLost(t)
         } else {
@@ -543,7 +544,7 @@ class MqttConnection(
     }
 
     /** 回调发送消息传递完成 */
-    private fun MqttCallbackExtended?.callbackDeliveryComplete(token: IMqttDeliveryToken?) {
+    private fun MqttClientCallback?.callbackDeliveryComplete(token: IMqttDeliveryToken?) {
         if (this != null) {
             this.deliveryComplete(token)
         } else {
@@ -552,9 +553,9 @@ class MqttConnection(
     }
 
     /** 回调消息到达 */
-    private fun MqttCallbackExtended?.callbackMessageArrived(topic: String, message: MqttMessage, data: DbStoredData) {
+    private fun MqttClientCallback?.callbackMessageArrived(topic: String, message: MqttMessage, data: DbStoredData) {
         if (this != null) {
-            this.messageArrived(topic, message)
+            this.messageArrived(topic, message, data)
         } else {
             EventBus.getDefault().post(MqttEvent.createMsgArrived(mBean.getClientKey(), data, mBean.getAckType()))
         }

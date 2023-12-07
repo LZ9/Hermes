@@ -1,7 +1,5 @@
 package com.lodz.android.hermes.mqtt.base.connection
 
-import org.eclipse.paho.client.mqttv3.MqttMessage
-
 /**
  * MqttConnection订阅/取消订阅操作监听器
  * @author zhouL
@@ -9,9 +7,9 @@ import org.eclipse.paho.client.mqttv3.MqttMessage
  */
 interface OnMcSubListener {
 
-    fun onSuccess(clientKey: String, topic: Array<String>)
+    fun onSuccess(clientKey: String, topics: Array<String>)
 
-    fun onFail(clientKey: String, topic: Array<String>, t: Throwable)
+    fun onFail(clientKey: String, topics: Array<String>, t: Throwable)
 
 
 }

@@ -57,10 +57,10 @@ interface HermesMqttClient : Hermes {
     fun sendData(topic: String, data: ByteArray): IMqttDeliveryToken?
 
     /** 订阅主题 */
-    fun subscribe(topics: Array<String>)
+    fun subscribe(topics: Array<String>): HermesMqttClient
 
     /** 取消订阅主题列表[topics] */
-    fun unsubscribe(topics: Array<String>)
+    fun unsubscribe(topics: Array<String>): HermesMqttClient
 
     /** 获取已经订阅的主题 */
     fun getSubscribeTopic(): Array<String>

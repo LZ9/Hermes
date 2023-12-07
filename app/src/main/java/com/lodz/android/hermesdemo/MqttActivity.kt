@@ -7,6 +7,7 @@ import android.view.View
 import com.lodz.android.corekt.anko.append
 import com.lodz.android.corekt.anko.getColorCompat
 import com.lodz.android.corekt.anko.getListBySeparator
+import com.lodz.android.corekt.anko.toArrays
 import com.lodz.android.corekt.anko.toastShort
 import com.lodz.android.corekt.utils.DateUtils
 import com.lodz.android.hermes.contract.HermesMqttClient
@@ -209,6 +210,7 @@ class MqttActivity : BaseActivity(){
             .init(getContext())
             .setPrintLog(true)
             .setSilent(false)
+            .subscribe(DEFAULT_SUB_TOPIC.getListBySeparator(",").toArrays())
             .setLogTag("HermesLog")
             .setOnBuildListener(object :OnBuildListener{
                 override fun onSuccess(clientKey: String) {

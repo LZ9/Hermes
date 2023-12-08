@@ -10,6 +10,8 @@ import com.lodz.android.pandora.widget.base.TitleBarLayout
 
 class MainActivity : BaseActivity(){
 
+    // TODO: 2023/12/8 页面待完善
+
     private val mBinding: ActivityMainBinding by bindingLayout(ActivityMainBinding::inflate)
 
     override fun getViewBindingLayout(): View = mBinding.root
@@ -30,6 +32,10 @@ class MainActivity : BaseActivity(){
         super.setListeners()
         mBinding.mqttBtn.setOnClickListener {
             MqttActivity.start(getContext())//MQTT
+        }
+
+        mBinding.mqttServiceBtn.setOnClickListener {
+            MqttServiceActivity.start(getContext())//MQTT后台服务
         }
 
         mBinding.websocketBtn.setOnClickListener {

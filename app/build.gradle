@@ -5,7 +5,6 @@ plugins {
 
 android {
     compileSdk 34
-
     defaultConfig {
         applicationId "com.lodz.android.hermesdemo"
         minSdk 21
@@ -68,7 +67,7 @@ android {
 
 dependencies {
     // 组件库
-    implementation 'ink.lodz:pandora:2.0.7'
+    implementation 'ink.lodz:pandora:2.0.8'
     // 推送组件
     implementation project(':hermes')
 }

@@ -92,12 +92,19 @@ class MqttActivity : BaseActivity(){
         }
         mHermes?.release()
         mHermes = null
+        mBinding.urlEdit.isEnabled = true
+        mBinding.clientIdEdit.isEnabled = true
+        mBinding.defSubTopicEdit.isEnabled = true
     }
 
     override fun setListeners() {
         super.setListeners()
         // 创建
         mBinding.createBtn.setOnClickListener {
+            if (mHermes != null){
+                toastShort(R.string.mqtt_client_already_create)
+                return@setOnClickListener
+            }
             if (mBinding.urlEdit.text.isEmpty()) {
                 toastShort(R.string.mqtt_url_empty)
                 return@setOnClickListener
@@ -106,7 +113,24 @@ class MqttActivity : BaseActivity(){
                 toastShort(R.string.mqtt_client_id_empty)
                 return@setOnClickListener
             }
-            create(mBinding.urlEdit.text.toString(), mBinding.clientIdEdit.text.toString())
+            if (mBinding.defSubTopicEdit.text.isEmpty()) {
+                toastShort(R.string.mqtt_sub_topic_empty)
+                return@setOnClickListener
+            }
+            create(
+                mBinding.urlEdit.text.toString(),
+                mBinding.clientIdEdit.text.toString(),
+                mBinding.defSubTopicEdit.text.toString(),
+                mBinding.silentSwitch.isChecked
+            )
+        }
+
+        mBinding.releaseBtn.setOnClickListener {
+            if (mHermes == null){
+                toastShort(R.string.mqtt_client_no_create)
+                return@setOnClickListener
+            }
+            releaseHermes()
         }
 
         // 发送
@@ -133,22 +157,33 @@ class MqttActivity : BaseActivity(){
 
         // 连接按钮
         mBinding.connectBtn.setOnClickListener {
+            if (mHermes == null){
+                toastShort(R.string.mqtt_client_no_create)
+                return@setOnClickListener
+            }
+            if (mHermes?.isConnected() == true){
+                toastShort(R.string.mqtt_already_connect)
+                return@setOnClickListener
+            }
             mHermes?.connect()
         }
 
         // 断开按钮
         mBinding.disconnectBtn.setOnClickListener {
+            if (mHermes == null){
+                toastShort(R.string.mqtt_client_no_create)
+                return@setOnClickListener
+            }
+            if (mHermes?.isConnected() == false){
+                toastShort(R.string.mqtt_already_disconnect)
+                return@setOnClickListener
+            }
             mHermes?.disconnect()
         }
 
-        // 设置静默
-        mBinding.silentBtn.setOnClickListener {
-            mHermes?.setSilent(true)
-        }
-
-        // 设置非静默
-        mBinding.unsilentBtn.setOnClickListener {
-            mHermes?.setSilent(false)
+        // 设置是否静默
+        mBinding.silentSwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+            mHermes?.setSilent(isChecked)
         }
 
         // 订阅主题
@@ -186,6 +221,9 @@ class MqttActivity : BaseActivity(){
         mBinding.clientIdEdit.setText(DEFAULT_CLIENT_ID)
         mBinding.clientIdEdit.setSelection(mBinding.clientIdEdit.length())
 
+        mBinding.defSubTopicEdit.setText(DEFAULT_SUB_TOPIC)
+        mBinding.defSubTopicEdit.setSelection(mBinding.defSubTopicEdit.length())
+
         mBinding.sendTopicEdit.setText(DEFAULT_SEND_TOPIC)
         mBinding.sendTopicEdit.setSelection(mBinding.sendTopicEdit.length())
 
@@ -200,17 +238,13 @@ class MqttActivity : BaseActivity(){
         showStatusCompleted()
     }
 
-    /** 连接，地址[url]，客户端id[clientId]，订阅主题[subTopic] */
-    private fun create(url: String, clientId: String) {
-        if (mHermes != null){
-            releaseHermes()
-        }
-
+    /** 连接，地址[url]，客户端id[clientId]，订阅主题[topic]，是否静默[isSilent] */
+    private fun create(url: String, clientId: String, topic: String, isSilent: Boolean) {
         mHermes = HermesAgent.createMqttClient()
             .init(getContext())
             .setPrintLog(true)
-            .setSilent(false)
-            .subscribe(DEFAULT_SUB_TOPIC.getListBySeparator(",").toArrays())
+            .setSilent(isSilent)
+            .subscribe(topic.getListBySeparator(",").toArrays())
             .setLogTag("HermesLog")
             .setOnBuildListener(object :OnBuildListener{
                 override fun onSuccess(clientKey: String) {
@@ -275,7 +309,9 @@ class MqttActivity : BaseActivity(){
                 }
             })
             .build(url, clientId)
-        mHermes?.connect()
+        mBinding.urlEdit.isEnabled = false
+        mBinding.clientIdEdit.isEnabled = false
+        mBinding.defSubTopicEdit.isEnabled = false
     }
 
     /** 打印信息[result] */

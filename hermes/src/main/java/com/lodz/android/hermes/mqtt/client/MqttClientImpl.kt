@@ -121,7 +121,9 @@ class MqttClientImpl : HermesMqttClient {
                 if (ackType == Ack.AUTO_ACK){//自动确认到达时删除数据库内的缓存
                     mMqttClient?.getConnection()?.acknowledgeMessageArrival(data.messageId)
                 }
-                MainScope().launch { mOnSubscribeListener?.onMsgArrived(topic, message) }
+                if (!isSilent){
+                    MainScope().launch { mOnSubscribeListener?.onMsgArrived(topic, message) }
+                }
             }
 
             override fun deliveryComplete(token: IMqttDeliveryToken?) {

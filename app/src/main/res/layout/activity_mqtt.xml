@@ -173,18 +173,22 @@
         android:layout_marginEnd="10dp"
         android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/mqtt_notification_config_title"
-            android:textColor="@color/colorAccent" />
-
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/silent_switch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:checked="false" />
+            android:checked="false"
+            android:text="@string/mqtt_silent_config_title"
+            android:textColor="@color/colorAccent" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/notify_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:checked="true"
+            android:text="@string/mqtt_notify_config_title"
+            android:textColor="@color/colorAccent" />
 
     </LinearLayout>
 

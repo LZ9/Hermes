@@ -19,7 +19,8 @@
     <string name="mqtt_clean">清空</string>
     <string name="mqtt_disconnect">断开</string>
     <string name="mqtt_confirm">确定</string>
-    <string name="mqtt_notification_config_title">消息提醒设置（是否静默）</string>
+    <string name="mqtt_silent_config_title">是否静默</string>
+    <string name="mqtt_notify_config_title">是否通知</string>
     <string name="mqtt_silent">静默（不提醒消息）</string>
     <string name="mqtt_unsilent">非静默（正常提醒）</string>
     <string name="mqtt_dynamic_sub_title">动态订阅</string>

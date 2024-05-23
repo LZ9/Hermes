@@ -4,12 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import androidx.core.app.NotificationCompat
 import com.lodz.android.corekt.anko.append
 import com.lodz.android.corekt.anko.getColorCompat
 import com.lodz.android.corekt.anko.getListBySeparator
 import com.lodz.android.corekt.anko.toArrays
 import com.lodz.android.corekt.anko.toastShort
 import com.lodz.android.corekt.utils.DateUtils
+import com.lodz.android.corekt.utils.NotificationUtils
 import com.lodz.android.hermes.contract.HermesMqttClient
 import com.lodz.android.hermes.modules.HermesAgent
 import com.lodz.android.hermes.mqtt.client.OnBuildListener
@@ -87,9 +89,7 @@ class MqttActivity : BaseActivity(){
     }
 
     private fun releaseHermes(){
-        if (mHermes?.isConnected() == true){
-            mHermes?.disconnect()
-        }
+        mHermes?.disconnect()
         mHermes?.release()
         mHermes = null
         mBinding.urlEdit.isEnabled = true
@@ -186,6 +186,10 @@ class MqttActivity : BaseActivity(){
             mHermes?.setSilent(isChecked)
         }
 
+        // 设置是否通知
+        mBinding.notifySwitch.setOnCheckedChangeListener { buttonView, isChecked ->
+
+        }
         // 订阅主题
         mBinding.subTopicBtn.setOnClickListener {
             if (mHermes == null || mHermes?.isConnected() == false) {
@@ -295,6 +299,9 @@ class MqttActivity : BaseActivity(){
                 override fun onMsgArrived(subTopic: String, msg: MqttMessage) {
                     val content = String(msg.payload, Charset.forName("UTF-8"))
                     logResult("消息到达($subTopic)： $content")
+                    if (mBinding.notifySwitch.isChecked){
+                        showNotify(subTopic, content)
+                    }
                 }
 
             })
@@ -322,6 +329,26 @@ class MqttActivity : BaseActivity(){
             mBinding.resultTv.text = log
         }
         mBinding.resultTv.text = log.append("\n").append(text)
+    }
+
+    /** 显示通知 */
+    private fun showNotify(topic: String, content: String) {
+        val builder = NotificationCompat.Builder(getContext(), App.NOTIFI_CHANNEL_MAIN_ID)// 获取构造器
+        builder.setTicker(content)// 通知栏显示的文字
+        builder.setContentTitle("$topic 发来消息")// 通知栏通知的标题
+        builder.setContentText(content)// 通知栏通知的详细内容（只有一行）
+        builder.setAutoCancel(true)// 设置为true，点击该条通知会自动删除，false时只能通过滑动来删除（一般都是true）
+        builder.setSmallIcon(R.mipmap.ic_launcher)//通知上面的小图标（必传）
+        builder.setDefaults(NotificationCompat.DEFAULT_ALL)//通知默认的声音 震动 呼吸灯
+        builder.priority = NotificationCompat.PRIORITY_DEFAULT//设置优先级，级别高的排在前面
+
+        val bigTextStyle = NotificationCompat.BigTextStyle()
+        bigTextStyle.setBigContentTitle("$topic 发来消息")// 给样式设置大文本的标题
+        bigTextStyle.bigText(content)// 给样式设置大文本内容（几行都可以）
+        bigTextStyle.setSummaryText("Notify")//总结，可以不设置
+        builder.setStyle(bigTextStyle)// 将样式添加到通知
+
+        NotificationUtils.create(getContext()).send(builder.build())
     }
 
 }

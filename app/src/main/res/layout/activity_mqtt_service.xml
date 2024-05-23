@@ -145,7 +145,7 @@
                 android:layout_marginStart="10dp"
                 android:layout_marginTop="5dp"
                 android:layout_marginEnd="10dp"
-                android:text="@string/mqtt_notification_config_title"
+                android:text="@string/mqtt_silent_config_title"
                 android:textColor="@color/color_3a958d" />
 
             <LinearLayout

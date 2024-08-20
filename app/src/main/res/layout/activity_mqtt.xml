@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -11,7 +12,8 @@
         android:background="@color/color_d9d9d9"
         android:padding="8dp"
         android:text="@string/mqtt_github"
-        android:textColor="@color/colorAccent" />
+        android:textColor="@color/colorAccent"
+        android:textSize="12sp" />
 
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scroll_view"
@@ -23,7 +25,8 @@
             android:id="@+id/result_tv"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="10dp"
+            android:padding="5dp"
+            android:textSize="12sp"
             tools:text="sdasd" />
 
     </androidx.core.widget.NestedScrollView>
@@ -56,7 +59,7 @@
             android:hint="@string/mqtt_url_hint"
             android:importantForAutofill="no"
             android:inputType="textUri"
-            android:textSize="14sp" />
+            android:textSize="12sp" />
 
         <EditText
             android:id="@+id/client_id_edit"
@@ -65,7 +68,7 @@
             android:hint="@string/mqtt_client_id_hint"
             android:importantForAutofill="no"
             android:inputType="text"
-            android:textSize="14sp" />
+            android:textSize="12sp" />
 
         <EditText
             android:id="@+id/def_sub_topic_edit"
@@ -74,7 +77,7 @@
             android:hint="@string/mqtt_def_sub_topic_hint"
             android:importantForAutofill="no"
             android:inputType="text"
-            android:textSize="14sp" />
+            android:textSize="12sp" />
 
     </LinearLayout>
 
@@ -112,13 +115,13 @@
                 android:layout_weight="1"
                 android:hint="@string/mqtt_sub_topic_hint"
                 android:inputType="text"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 tools:ignore="Autofill" />
 
             <TextView
                 android:id="@+id/sub_topic_btn"
                 android:layout_width="80dp"
-                android:layout_height="40dp"
+                android:layout_height="30dp"
                 android:layout_marginStart="5dp"
                 android:background="@drawable/selector_btn_mqtt"
                 android:gravity="center"
@@ -142,13 +145,13 @@
                 android:layout_weight="1"
                 android:hint="@string/mqtt_remove_topic_hint"
                 android:inputType="text"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 tools:ignore="Autofill" />
 
             <TextView
                 android:id="@+id/remove_topic_btn"
                 android:layout_width="80dp"
-                android:layout_height="40dp"
+                android:layout_height="30dp"
                 android:layout_marginStart="5dp"
                 android:background="@drawable/selector_btn_mqtt"
                 android:gravity="center"
@@ -169,8 +172,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="10dp"
-        android:layout_marginEnd="10dp"
+        android:layout_margin="10dp"
         android:orientation="horizontal">
 
         <androidx.appcompat.widget.SwitchCompat
@@ -179,7 +181,9 @@
             android:layout_height="wrap_content"
             android:checked="false"
             android:text="@string/mqtt_silent_config_title"
-            android:textColor="@color/colorAccent" />
+            android:textColor="@color/colorAccent"
+            android:theme="@style/MqttSwitchCompat"
+            app:switchPadding="5dp" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/notify_switch"
@@ -188,7 +192,9 @@
             android:layout_marginStart="10dp"
             android:checked="true"
             android:text="@string/mqtt_notify_config_title"
-            android:textColor="@color/colorAccent" />
+            android:textColor="@color/colorAccent"
+            android:theme="@style/MqttSwitchCompat"
+            app:switchPadding="5dp" />
 
     </LinearLayout>
 
@@ -227,12 +233,12 @@
                 android:hint="@string/mqtt_send_topic_hint"
                 android:importantForAutofill="no"
                 android:inputType="text"
-                android:textSize="14sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/clean_btn"
                 android:layout_width="80dp"
-                android:layout_height="40dp"
+                android:layout_height="30dp"
                 android:layout_marginStart="10dp"
                 android:background="@drawable/selector_btn_mqtt"
                 android:gravity="center"
@@ -256,12 +262,12 @@
                 android:hint="@string/mqtt_send_hint"
                 android:importantForAutofill="no"
                 android:inputType="text"
-                android:textSize="14sp" />
+                android:textSize="12sp" />
 
             <TextView
                 android:id="@+id/send_btn"
                 android:layout_width="80dp"
-                android:layout_height="40dp"
+                android:layout_height="30dp"
                 android:layout_gravity="bottom"
                 android:layout_marginStart="10dp"
                 android:background="@drawable/selector_btn_mqtt"
@@ -288,7 +294,7 @@
         <TextView
             android:id="@+id/create_btn"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="30dp"
             android:layout_weight="1"
             android:background="@drawable/selector_btn_mqtt"
             android:gravity="center"
@@ -300,7 +306,7 @@
         <TextView
             android:id="@+id/connect_btn"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="30dp"
             android:layout_marginStart="5dp"
             android:layout_weight="1"
             android:background="@drawable/selector_btn_mqtt"
@@ -313,7 +319,7 @@
         <TextView
             android:id="@+id/disconnect_btn"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="30dp"
             android:layout_marginStart="5dp"
             android:layout_weight="1"
             android:background="@drawable/selector_btn_mqtt"
@@ -326,7 +332,7 @@
         <TextView
             android:id="@+id/release_btn"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="30dp"
             android:layout_marginStart="5dp"
             android:layout_weight="1"
             android:background="@drawable/selector_btn_mqtt"

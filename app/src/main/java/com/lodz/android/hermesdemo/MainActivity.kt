@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.View
 import com.lodz.android.corekt.anko.getColorCompat
 import com.lodz.android.hermesdemo.databinding.ActivityMainBinding
+import com.lodz.android.hermesdemo.mqtt.MqttActivity
+import com.lodz.android.hermesdemo.mqttservice.MqttServiceActivity
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout
 import com.lodz.android.pandora.widget.base.TitleBarLayout

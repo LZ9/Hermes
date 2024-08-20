@@ -1,4 +1,4 @@
-package com.lodz.android.hermesdemo
+package com.lodz.android.hermesdemo.mqttservice
 
 import android.content.Context
 import android.content.Intent
@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import com.lodz.android.corekt.anko.getColorCompat
 import com.lodz.android.corekt.utils.StatusBarUtil
+import com.lodz.android.hermesdemo.R
 import com.lodz.android.hermesdemo.databinding.ActivityMqttServiceBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout
@@ -20,7 +21,7 @@ class MqttServiceActivity : BaseActivity() {
     companion object {
 
         /** 默认地址 */
-        private const val DEFAULT_URL = "tcp://192.168.1.193:1883"
+        private const val DEFAULT_URL = "tcp://192.168.1.37:1883"
 
         /** 默认客户端id */
         private const val DEFAULT_CLIENT_ID = "12345"

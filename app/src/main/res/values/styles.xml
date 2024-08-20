@@ -8,4 +8,22 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="MqttServiceSwitchCompat" parent="Theme.AppCompat.Light">
+        <!--开启时的颜色-->
+        <item name="colorControlActivated">@color/color_3a958d</item>
+        <!--关闭时的颜色-->
+        <item name="colorSwitchThumbNormal">@color/color_d9d9d9</item>
+        <!--关闭时的轨迹颜色-->
+        <item name="android:colorForeground">@color/color_d9d9d9</item>
+    </style>
+
+    <style name="MqttSwitchCompat" parent="Theme.AppCompat.Light">
+        <!--开启时的颜色-->
+        <item name="colorControlActivated">@color/colorAccent</item>
+        <!--关闭时的颜色-->
+        <item name="colorSwitchThumbNormal">@color/color_d9d9d9</item>
+        <!--关闭时的轨迹颜色-->
+        <item name="android:colorForeground">@color/color_d9d9d9</item>
+    </style>
+
 </resources>

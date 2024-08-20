@@ -20,7 +20,7 @@
     <string name="mqtt_disconnect">断开</string>
     <string name="mqtt_confirm">确定</string>
     <string name="mqtt_silent_config_title">是否静默</string>
-    <string name="mqtt_notify_config_title">是否通知</string>
+    <string name="mqtt_notify_config_title">是否通知栏提醒</string>
     <string name="mqtt_silent">静默（不提醒消息）</string>
     <string name="mqtt_unsilent">非静默（正常提醒）</string>
     <string name="mqtt_dynamic_sub_title">动态订阅</string>
@@ -39,6 +39,8 @@
     <string name="mqtt_already_connect">已连接</string>
     <string name="mqtt_already_disconnect">已断开</string>
     <string name="mqtt_github">Github：https://github.com/eclipse/paho.mqtt.android</string>
+    <string name="mqtt_foreground_service_title">Hermes消息订阅</string>
+    <string name="mqtt_foreground_service_content">消息中心正在为您服务</string>
 
     <string name="ws_title">WebSocket客户端长连接</string>
     <string name="ws_github">Github：https://github.com/TooTallNate/Java-WebSocket</string>

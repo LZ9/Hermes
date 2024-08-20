@@ -1,4 +1,4 @@
-package com.lodz.android.hermesdemo
+package com.lodz.android.hermesdemo.mqtt
 
 import android.content.Context
 import android.content.Intent
@@ -19,6 +19,8 @@ import com.lodz.android.hermes.mqtt.client.OnConnectListener
 import com.lodz.android.hermes.mqtt.client.OnSendListener
 import com.lodz.android.hermes.mqtt.client.OnSubscribeListener
 import com.lodz.android.hermes.mqtt.client.OnUnsubscribeListener
+import com.lodz.android.hermesdemo.App
+import com.lodz.android.hermesdemo.R
 import com.lodz.android.hermesdemo.databinding.ActivityMqttBinding
 import com.lodz.android.pandora.base.activity.BaseActivity
 import com.lodz.android.pandora.utils.viewbinding.bindingLayout
@@ -37,7 +39,7 @@ class MqttActivity : BaseActivity(){
     companion object {
 
         /** 默认地址 */
-        private const val DEFAULT_URL = "tcp://192.168.1.193:1883"
+        private const val DEFAULT_URL = "tcp://192.168.1.37:1883"
 
         /** 默认客户端id */
         private const val DEFAULT_CLIENT_ID = "12345"
@@ -273,13 +275,13 @@ class MqttActivity : BaseActivity(){
                 }
 
                 override fun deliveryComplete(token: IMqttDeliveryToken?) {
-                    logResult("消息传递到服务端完成 ${token?.toString()}")
+
                 }
             })
             .setOnSendListener(object : OnSendListener {
                 override fun onComplete(topic: String, data: MqttMessage) {
                     val content = String(data.payload, Charset.forName("UTF-8"))
-                    logResult("String发送成功 : topic ---> $topic   $content")
+                    logResult("消息发送成功 : topic ---> $topic   $content")
                 }
 
                 override fun onFailure(topic: String, cause: Throwable) {
